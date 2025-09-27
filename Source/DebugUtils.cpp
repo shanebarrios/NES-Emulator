@@ -1,6 +1,7 @@
 #include "DebugUtils.h"
 
-#include "CPU.h"
+#include "CPU.h" 
+#include <cstring>
 
 namespace DebugUtils
 {
@@ -74,6 +75,39 @@ namespace DebugUtils
 		case InstrType::TXS:  return "TXS";
 		case InstrType::TYA:  return "TYA";
 		default: return nullptr;
+		}
+	}
+
+	void AddrModeToStr(AddrMode mode, uint16_t operand, uint16_t effectiveAddr, uint8_t val, char* buf, size_t bufLen)
+	{
+		switch (mode)
+		{
+		case AddrMode::None: 
+		case AddrMode::Implicit: buf[0] = '\0'; return;
+		case AddrMode::Accumulator:
+			std::snprintf(buf, bufLen, "A"); return;
+		case AddrMode::Immediate:
+			std::snprintf(buf, bufLen, "#$%02X", val); return;
+		case AddrMode::ZeroPage:
+			std::snprintf(buf, bufLen, "$%02X = %02X", effectiveAddr, val); return;
+		case AddrMode::ZeroPageX:
+			std::snprintf(buf, bufLen, "$%02X,X @ %02X = %02X", operand, effectiveAddr, val); return;
+		case AddrMode::ZeroPageY:
+			std::snprintf(buf, bufLen, "$%02X,Y @ %02X = %02X", operand, effectiveAddr, val); return;
+		case AddrMode::Relative:
+			std::snprintf(buf, bufLen, "$%04X", effectiveAddr); return;
+		case AddrMode::Absolute:
+			std::snprintf(buf, bufLen, "$%04X", effectiveAddr); return;
+		case AddrMode::AbsoluteX:
+			std::snprintf(buf, bufLen, "$%04X,X @ %04X = %02X", operand, effectiveAddr, val); return;
+		case AddrMode::AbsoluteY:
+			std::snprintf(buf, bufLen, "$%04X,Y @ %04X = %02X", operand, effectiveAddr, val); return;
+		case AddrMode::Indirect:
+			std::snprintf(buf, bufLen, "($%04X) = %04X", operand, effectiveAddr); return;
+		case AddrMode::IndexedIndirect:
+		case AddrMode::IndirectIndexed:
+		default:
+			buf[0] = '\0'; return;
 		}
 	}
 }

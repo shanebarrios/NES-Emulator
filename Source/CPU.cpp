@@ -92,7 +92,7 @@ const std::array<Instruction, 256> CPU::s_OpcodeLookup = [] {
 
 	lookup[0xCA] = { InstrType::DEX, AddrMode::Implicit, 1, 2 };
 
-	lookup[0x88] = { InstrType::DEX, AddrMode::Implicit, 1, 2 };
+	lookup[0x88] = { InstrType::DEY, AddrMode::Implicit, 1, 2 };
 
 	lookup[0x49] = { InstrType::EOR, AddrMode::Immediate, 2, 2 };
 	lookup[0x45] = { InstrType::EOR, AddrMode::ZeroPage, 2, 3 };
@@ -146,7 +146,7 @@ const std::array<Instruction, 256> CPU::s_OpcodeLookup = [] {
 
 	lookup[0xEA] = { InstrType::NOP, AddrMode::Implicit, 1, 2 };
 
-	lookup[0x09] = { InstrType::ORA, AddrMode::Implicit, 2, 2 };
+	lookup[0x09] = { InstrType::ORA, AddrMode::Immediate, 2, 2 };
 	lookup[0x05] = { InstrType::ORA, AddrMode::ZeroPage, 2, 3 };
 	lookup[0x15] = { InstrType::ORA, AddrMode::ZeroPageX, 2, 4 };
 	lookup[0x0D] = { InstrType::ORA, AddrMode::Absolute, 3, 4 };
@@ -231,24 +231,32 @@ void CPU::Init(Bus* bus)
 	m_Regs.A = 0;
 	m_Regs.X = 0;
 	m_Regs.Y = 0;
+	m_Regs.PC = 0;
+	m_Regs.S = 0xFD;
+	m_StatusReg = StatusFlag::InterruptDisable | StatusFlag::Unused;
+}
+
+void CPU::Reset()
+{
 	m_Regs.PC = 0xC000;
 	m_Regs.S = 0xFD;
-	m_StatusReg = StatusFlag::InterruptDisable;
+	m_StatusReg.Set(StatusFlag::InterruptDisable);
+	m_InstructionRemainingCycles = 7;
 }
 
 void CPU::PerformCycle()
 {
-	m_TotalCycles++;
 	if (m_InstructionRemainingCycles > 0)
 	{
 		m_InstructionRemainingCycles--;
+		m_TotalCycles++;
 		return;
 	}
 
-	if (m_InterruptDisableDelay != INTERRUPT_DISABLE_DELAY_NONE)
-	{
-		m_StatusReg.Set(StatusFlag::InterruptDisable, m_InterruptDisableDelay == INTERRUPT_DISABLE_DELAY_ON);
-	}
+	//if (m_InterruptDisableDelay != INTERRUPT_DISABLE_DELAY_NONE)
+	//{
+	//	m_StatusReg.Set(StatusFlag::InterruptDisable, m_InterruptDisableDelay == INTERRUPT_DISABLE_DELAY_ON);
+	//}
 
 	const uint8_t opCode = Read(m_Regs.PC);
 	
@@ -269,14 +277,34 @@ void CPU::PrintState() const
 
 	const int instrBytes = m_CurrentInstruction.byteCount;
 
+	char addrBuf[32];
+
+	uint16_t operand = 0;
+	if (m_CurrentInstruction.byteCount == 2)
+		operand = Read(m_Regs.PC + 1);
+	if (m_CurrentInstruction.byteCount == 3)
+		operand = ReadWord(m_Regs.PC + 1);
+
+	const uint16_t addr = ResolveAddress(m_CurrentInstruction.addrMode);
+
+	DebugUtils::AddrModeToStr(
+		m_CurrentInstruction.addrMode,
+		operand,
+		addr,
+		Read(addr),
+		addrBuf,
+		sizeof(addrBuf));
+
 	const int n = std::snprintf(buf, sizeof(buf),
-		"%04X  %02X %02X %02X  %s \tA:%02X X:%02X Y:%02X P:%02X S:%02X\n",
+		"%04X  %02X %02X %02X  %s %-32s A:%02X X:%02X Y:%02X P:%02X S:%02X CYC:%llu\n",
 		m_Regs.PC,
 		Read(m_Regs.PC),
 		instrBytes > 1 ? Read(m_Regs.PC + 1) : 0,
 		instrBytes > 2 ? Read(m_Regs.PC + 2) : 0,
 		DebugUtils::InstrTypeToStr(m_CurrentInstruction.instrType),
-		m_Regs.A, m_Regs.X, m_Regs.Y, m_StatusReg.GetRaw(), m_Regs.S
+		addrBuf,
+		m_Regs.A, m_Regs.X, m_Regs.Y, m_StatusReg.GetRaw(), m_Regs.S,
+		m_TotalCycles
 	);
 	
 	if (instrBytes < 2)
@@ -397,11 +425,11 @@ bool CPU::AddsCycle(AddrMode addrMode) const
 	}
 }
 
-uint8_t CPU::Branch(uint16_t offset)
+uint8_t CPU::Branch(uint16_t addr)
 {
-	const uint16_t updated = m_Regs.PC + 2 + offset;
+	const uint16_t updated = addr;
 	uint8_t addCycles = 1;
-	if ((updated & 0xFF00) != (m_Regs.PC & 0xFF00))
+	if ((updated & 0xFF00) != ((m_Regs.PC + m_CurrentInstruction.byteCount) & 0xFF00))
 		addCycles++;
 	m_Regs.PC = updated;
 	m_PCManuallySet = true;
@@ -527,12 +555,12 @@ uint16_t CPU::ResolveZeroPageY() const
 
 uint16_t CPU::ResolveRelative() const
 {
-	const uint8_t addr = Read(m_Regs.PC + 1);
+	uint16_t addr = Read(m_Regs.PC + 1);
 	if (addr & 0x80)
 	{
-		return addr | 0xFF00;
+		addr |= 0xFF00;
 	}
-	return addr;
+	return addr + m_Regs.PC + 2;
 }
 
 uint16_t CPU::ResolveAbsolute() const
@@ -582,9 +610,11 @@ uint8_t CPU::ADC(AddrMode addrMode)
 	const uint16_t result = m_Regs.A + val + m_StatusReg.Test(StatusFlag::Carry);
 
 	m_StatusReg.Set(StatusFlag::Carry, result > 0xFF);
-	m_StatusReg.Set(StatusFlag::Zero, result == 0);
+	m_StatusReg.Set(StatusFlag::Zero, (result & 0xFF) == 0);
 	m_StatusReg.Set(StatusFlag::Overflow, (result ^ m_Regs.A) & (result ^ val) & 0x80);
 	m_StatusReg.Set(StatusFlag::Negative, result & 0x80);
+
+	m_Regs.A = result & 0xFF;
 
 	return AddsCycle(addrMode);
 }
@@ -688,14 +718,14 @@ uint8_t CPU::BRK(AddrMode addrMode)
 uint8_t CPU::BVC(AddrMode addrMode)
 {
 	if (!m_StatusReg.Test(StatusFlag::Overflow))
-		Branch(ResolveAddress(addrMode));
+		return Branch(ResolveAddress(addrMode));
 	return 0;
 }
 
 uint8_t CPU::BVS(AddrMode addrMode)
 {
 	if (m_StatusReg.Test(StatusFlag::Overflow))
-		Branch(ResolveAddress(addrMode));
+		return Branch(ResolveAddress(addrMode));
 	return 0;
 }
 
@@ -713,7 +743,8 @@ uint8_t CPU::CLD(AddrMode addrMode)
 
 uint8_t CPU::CLI(AddrMode addrMode)
 {
-	m_InterruptDisableDelay = INTERRUPT_DISABLE_DELAY_OFF;
+	m_StatusReg.Set(StatusFlag::InterruptDisable, false);
+	//m_InterruptDisableDelay = INTERRUPT_DISABLE_DELAY_OFF;
 	return 0;
 }
 
@@ -783,7 +814,7 @@ uint8_t CPU::EOR(AddrMode addrMode)
 	const uint8_t val = Read(ResolveAddress(addrMode));
 	m_Regs.A ^= val;
 	m_StatusReg.Set(StatusFlag::Zero, m_Regs.A == 0);
-	m_StatusReg.Set(StatusFlag::Zero, m_Regs.A & 0x80);
+	m_StatusReg.Set(StatusFlag::Negative, m_Regs.A & 0x80);
 	return AddsCycle(addrMode);
 }
 
@@ -835,7 +866,7 @@ uint8_t CPU::LDA(AddrMode addrMode)
 	m_Regs.A = Read(ResolveAddress(addrMode));
 	m_StatusReg.Set(StatusFlag::Zero, m_Regs.A == 0);
 	m_StatusReg.Set(StatusFlag::Negative, m_Regs.A & 0x80);
-	return 0;
+	return AddsCycle(addrMode);
 }
 
 uint8_t CPU::LDX(AddrMode addrMode)
@@ -843,7 +874,7 @@ uint8_t CPU::LDX(AddrMode addrMode)
 	m_Regs.X = Read(ResolveAddress(addrMode));
 	m_StatusReg.Set(StatusFlag::Zero, m_Regs.X == 0);
 	m_StatusReg.Set(StatusFlag::Negative, m_Regs.X & 0x80);
-	return 0;
+	return AddsCycle(addrMode);
 }
 
 uint8_t CPU::LDY(AddrMode addrMode)
@@ -851,7 +882,7 @@ uint8_t CPU::LDY(AddrMode addrMode)
 	m_Regs.Y = Read(ResolveAddress(addrMode));
 	m_StatusReg.Set(StatusFlag::Zero, m_Regs.Y == 0);
 	m_StatusReg.Set(StatusFlag::Negative, m_Regs.Y & 0x80);
-	return 0;
+	return AddsCycle(addrMode);
 }
 
 uint8_t CPU::LSR(AddrMode addrMode)
@@ -906,49 +937,80 @@ uint8_t CPU::PHP(AddrMode addrMode)
 uint8_t CPU::PLA(AddrMode addrMode)
 {
 	m_Regs.A = PopStack();
+	m_StatusReg.Set(StatusFlag::Zero, m_Regs.A == 0);
+	m_StatusReg.Set(StatusFlag::Negative, m_Regs.A & 0x80);
 	return 0;
 }
 
 uint8_t CPU::PLP(AddrMode addrMode)
 {
-	const uint8_t val = PopStack();
-	const uint8_t mask = static_cast<uint8_t>(StatusFlag::InterruptDisable);
-	const bool interruptDisable = val & mask;
-	const uint8_t src = val & ~mask;
-	m_StatusReg = StatusRegister{ static_cast<uint8_t>((m_StatusReg.GetRaw() & mask) | src) };
-	m_InterruptDisableDelay = interruptDisable ? INTERRUPT_DISABLE_DELAY_ON : INTERRUPT_DISABLE_DELAY_OFF;
+	const StatusRegister flags{ PopStack() };
+	//const bool interruptDisable = flags & StatusFlag::InterruptDisable;
+	m_StatusReg
+		.Set(StatusFlag::Carry, flags & StatusFlag::Carry)
+		.Set(StatusFlag::Zero, flags & StatusFlag::Zero)
+		.Set(StatusFlag::InterruptDisable, flags & StatusFlag::InterruptDisable)
+		.Set(StatusFlag::Decimal, flags & StatusFlag::Decimal)
+		.Set(StatusFlag::Overflow, flags & StatusFlag::Overflow)
+		.Set(StatusFlag::Negative, flags & StatusFlag::Negative);
+	//m_InterruptDisableDelay = interruptDisable ? INTERRUPT_DISABLE_DELAY_ON : INTERRUPT_DISABLE_DELAY_OFF;
 	return 0;
 }
 
 uint8_t CPU::ROL(AddrMode addrMode)
 {
 	const uint16_t addr = ResolveAddress(addrMode);
-	const uint8_t val = Read(addr);
-	Write(addr, val);
+	const uint8_t val = (addrMode == AddrMode::Accumulator) ? m_Regs.A : Read(addr);
 	const uint8_t res = (val << 1) | (m_StatusReg.Test(StatusFlag::Carry) ? 1 : 0);
 	m_StatusReg.Set(StatusFlag::Carry, val & 0x80);
 	m_StatusReg.Set(StatusFlag::Zero, res == 0);
 	m_StatusReg.Set(StatusFlag::Negative, res & 0x80);
-	Write(addr, res);
+
+	if (addrMode == AddrMode::Accumulator)
+	{
+		m_Regs.A = res;
+	}
+	else
+	{
+		Write(addr, val);
+		Write(addr, res);
+	}
 	return 0;
 }
 
 uint8_t CPU::ROR(AddrMode addrMode)
 {
 	const uint16_t addr = ResolveAddress(addrMode);
-	const uint8_t val = Read(addr);
-	Write(addr, val);
+	const uint8_t val = (addrMode == AddrMode::Accumulator) ? m_Regs.A : Read(addr);
 	const uint8_t res = (val >> 1) | (m_StatusReg.Test(StatusFlag::Carry) << 7);
 	m_StatusReg.Set(StatusFlag::Carry, val & 0x1);
 	m_StatusReg.Set(StatusFlag::Zero, res == 0);
 	m_StatusReg.Set(StatusFlag::Negative, res & 0x80);
-	Write(addr, res);
+
+	if (addrMode == AddrMode::Accumulator)
+	{
+		m_Regs.A = res;
+	}
+	else
+	{
+		Write(addr, val);
+		Write(addr, res);
+	}
+
 	return 0;
 }
 
 uint8_t CPU::RTI(AddrMode addrMode)
 {
-	m_StatusReg = StatusRegister{ PopStack() };
+	const StatusRegister flags{ PopStack() };
+	m_StatusReg
+		.Set(StatusFlag::Carry, flags & StatusFlag::Carry)
+		.Set(StatusFlag::Zero, flags & StatusFlag::Zero)
+		.Set(StatusFlag::InterruptDisable, flags & StatusFlag::InterruptDisable)
+		.Set(StatusFlag::Decimal, flags & StatusFlag::Decimal)
+		.Set(StatusFlag::Overflow, flags & StatusFlag::Overflow)
+		.Set(StatusFlag::Negative, flags & StatusFlag::Negative);
+
 	m_Regs.PC = PopStackWord();
 	m_PCManuallySet = true;
 	return 0;
@@ -963,15 +1025,17 @@ uint8_t CPU::RTS(AddrMode addrMode)
 
 uint8_t CPU::SBC(AddrMode addrMode)
 {
-	const uint8_t carry = m_StatusReg.Test(StatusFlag::Carry);
-	const uint8_t val = Read(ResolveAddress(addrMode));
-	const uint16_t res = m_Regs.A + ~val + carry;
-	m_StatusReg.Set(StatusFlag::Carry, res <= 0xFF);
-	m_StatusReg.Set(StatusFlag::Zero, (res & 0xFF) == 0);
-	m_StatusReg.Set(StatusFlag::Overflow, (res ^ m_Regs.A) & (res ^ ~val) & 0x80);
-	m_StatusReg.Set(StatusFlag::Negative, res & 0x80);
-	m_Regs.A = res & 0xFF;
-	return 0;
+	const uint8_t val = ~Read(ResolveAddress(addrMode));
+	const uint16_t result = m_Regs.A + val + m_StatusReg.Test(StatusFlag::Carry);
+
+	m_StatusReg.Set(StatusFlag::Carry, result > 0xFF);
+	m_StatusReg.Set(StatusFlag::Zero, (result & 0xFF) == 0);
+	m_StatusReg.Set(StatusFlag::Overflow, (result ^ m_Regs.A) & (result ^ val) & 0x80);
+	m_StatusReg.Set(StatusFlag::Negative, result & 0x80);
+
+	m_Regs.A = result & 0xFF;
+
+	return AddsCycle(addrMode);
 }
 
 uint8_t CPU::SEC(AddrMode addrMode)
@@ -988,7 +1052,8 @@ uint8_t CPU::SED(AddrMode addrMode)
 
 uint8_t CPU::SEI(AddrMode addrMode)
 {
-	m_InterruptDisableDelay = INTERRUPT_DISABLE_DELAY_ON;
+	m_StatusReg.Set(StatusFlag::InterruptDisable);
+	//m_InterruptDisableDelay = INTERRUPT_DISABLE_DELAY_ON;
 	return 0;
 }
 

@@ -13,6 +13,7 @@ enum class StatusFlag : uint8_t
 	InterruptDisable = 1 << 2,
 	Decimal = 1 << 3,
 	Break = 1 << 4,
+	Unused = 1 << 5,
 	Overflow = 1 << 6,
 	Negative = 1 << 7
 };
@@ -85,11 +86,14 @@ public:
 
 	bool Test(StatusFlag flag) const { return m_Flags & static_cast<uint8_t>(flag); }
 
-	StatusRegister operator|(StatusFlag flag) { return StatusRegister{ static_cast<uint8_t>(m_Flags | static_cast<uint8_t>(flag)) }; }
-	StatusRegister operator&(StatusFlag flag) { return StatusRegister{ static_cast<uint8_t>(m_Flags & static_cast<uint8_t>(flag)) }; }
+	StatusRegister operator|(StatusFlag flag) const { return StatusRegister{ static_cast<uint8_t>(m_Flags | static_cast<uint8_t>(flag)) }; }
+	StatusRegister operator&(StatusFlag flag) const { return StatusRegister{ static_cast<uint8_t>(m_Flags & static_cast<uint8_t>(flag)) }; }
 	StatusRegister& operator|=(StatusFlag flag) { return Set(flag); }
 	StatusRegister& operator&=(StatusFlag flag) { m_Flags &= static_cast<uint8_t>(flag); return *this; }
 	StatusRegister& operator=(StatusFlag flag) { m_Flags = static_cast<uint8_t>(flag); return *this; }
+
+	operator bool() const { return m_Flags != 0; }
+	bool operator!() const { return m_Flags == 0; }
 
 	uint8_t GetRaw() const { return m_Flags; }
 
@@ -105,6 +109,8 @@ public:
 	CPU() = default;
 
 	void Init(Bus* bus);
+
+	void Reset();
 
 	void PerformCycle();
 
@@ -135,7 +141,7 @@ private:
 
 	bool AddsCycle(AddrMode addrMode) const;
 
-	uint8_t Branch(uint16_t offset);
+	uint8_t Branch(uint16_t addr);
 
 	// ========== Address modes =========
 

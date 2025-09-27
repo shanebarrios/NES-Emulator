@@ -9,6 +9,7 @@ void System::Init()
 void System::LoadROM(const std::filesystem::path& path)
 {
 	m_Cartridge.LoadROM(path);
+	m_CPU.Reset();
 }
 
 void System::PerformCycle()
