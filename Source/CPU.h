@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <array>
+#include <optional>
 
 class Bus;
 
@@ -18,6 +19,7 @@ enum class StatusFlag : uint8_t
 
 enum class AddrMode
 {
+	None,
 	Implicit,
 	Accumulator,
 	Immediate,
@@ -33,13 +35,24 @@ enum class AddrMode
 	IndirectIndexed
 };
 
+enum class InstrType
+{
+	None,
+	ADC, AND, ASL, BCC, BCS, BEQ, BIT, BMI, BNE, BPL, BRK, BVC, BVS, CLC,
+	CLD, CLI, CLV, CMP, CPX, CPY, DEC, DEX, DEY, EOR, INC, INX, INY, JMP, 
+	JSR, LDA, LDX, LDY, LSR, NOP, ORA, PHA, PHP, PLA, PLP, ROL, ROR, RTI,
+	RTS, SBC, SEC, SED, SEI, STA, STX, STY, TAX, TAY, TSX, TXA, TXS, TYA
+};
+
 class CPU;
+
+typedef uint8_t (CPU::*InstructionFunc)(AddrMode);
 
 
 struct Instruction
 {
-	uint8_t (CPU::*op)(AddrMode) = nullptr;
-	AddrMode addrMode = AddrMode::Implicit;
+	InstrType instrType = InstrType::None;
+	AddrMode addrMode = AddrMode::None;
 	int byteCount = 0;
 	int cycleCount = 0;
 };
@@ -78,6 +91,8 @@ public:
 	StatusRegister& operator&=(StatusFlag flag) { m_Flags &= static_cast<uint8_t>(flag); return *this; }
 	StatusRegister& operator=(StatusFlag flag) { m_Flags = static_cast<uint8_t>(flag); return *this; }
 
+	uint8_t GetRaw() const { return m_Flags; }
+
 	uint8_t& GetRaw() { return m_Flags; }
 
 private:
@@ -87,14 +102,22 @@ private:
 class CPU
 {
 public:
-	CPU(Bus& bus);
+	CPU() = default;
+
+	void Init(Bus* bus);
 
 	void PerformCycle();
+
+	void PrintState() const;
 
 private:
 	static const std::array<Instruction, 256> s_OpcodeLookup;
 
 private:
+	void ExecuteInstruction();
+
+	InstructionFunc ResolveInstructionFunction(InstrType instrType) const;
+
 	uint8_t Read(uint16_t addr) const;
 	uint16_t ReadWord(uint16_t addr) const;
 
@@ -150,7 +173,7 @@ private:
 	uint8_t TSX(AddrMode); uint8_t TXA(AddrMode); uint8_t TXS(AddrMode); uint8_t TYA(AddrMode);
 
 private:
-	Bus& m_Bus;
+	Bus* m_Bus = nullptr;
 
 	StatusRegister m_StatusReg{};
 	
@@ -161,10 +184,14 @@ private:
 		uint8_t Y;
 		uint16_t PC;
 		uint8_t S;
-		uint8_t P;
-	} m_Regs;
+	} m_Regs{};
+
+	Instruction m_CurrentInstruction{};
 
 	uint8_t m_InstructionRemainingCycles = 0;
 	uint8_t m_InterruptDisableDelay = 0;
+
 	bool m_PCManuallySet = false;
+
+	uint64_t m_TotalCycles = 0;
 };

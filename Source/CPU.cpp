@@ -2,6 +2,9 @@
 
 #include "Bus.h"
 #include "Common.h"
+#include "DebugUtils.h"
+#include <stdio.h>
+#include <string.h>
 
 static constexpr uint8_t INTERRUPT_DISABLE_DELAY_NONE = 0x0;
 static constexpr uint8_t INTERRUPT_DISABLE_DELAY_OFF = 0x1;
@@ -9,226 +12,225 @@ static constexpr uint8_t INTERRUPT_DISABLE_DELAY_ON = 0x3;
 
 static constexpr uint16_t STACK_BEGIN = 0x0100;
 
-
 const std::array<Instruction, 256> CPU::s_OpcodeLookup = [] {
 	std::array<Instruction, 256> lookup{};
 
-	lookup[0x69] = { &CPU::ADC, AddrMode::Immediate, 2, 2 };
-	lookup[0x65] = { &CPU::ADC, AddrMode::ZeroPage, 2, 3 };
-	lookup[0x75] = { &CPU::ADC, AddrMode::ZeroPageX, 2, 4 };
-	lookup[0x6D] = { &CPU::ADC, AddrMode::Absolute, 3, 4 };
-	lookup[0x7D] = { &CPU::ADC, AddrMode::AbsoluteX, 3, 4 };
-	lookup[0x79] = { &CPU::ADC, AddrMode::AbsoluteY, 3, 4 };
-	lookup[0x61] = { &CPU::ADC, AddrMode::IndexedIndirect, 2, 6 };
-	lookup[0x71] = { &CPU::ADC, AddrMode::IndirectIndexed, 2, 5 };
+	lookup[0x69] = { InstrType::ADC, AddrMode::Immediate, 2, 2 };
+	lookup[0x65] = { InstrType::ADC, AddrMode::ZeroPage, 2, 3 };
+	lookup[0x75] = { InstrType::ADC, AddrMode::ZeroPageX, 2, 4 };
+	lookup[0x6D] = { InstrType::ADC, AddrMode::Absolute, 3, 4 };
+	lookup[0x7D] = { InstrType::ADC, AddrMode::AbsoluteX, 3, 4 };
+	lookup[0x79] = { InstrType::ADC, AddrMode::AbsoluteY, 3, 4 };
+	lookup[0x61] = { InstrType::ADC, AddrMode::IndexedIndirect, 2, 6 };
+	lookup[0x71] = { InstrType::ADC, AddrMode::IndirectIndexed, 2, 5 };
 
-	lookup[0x29] = { &CPU::AND, AddrMode::Immediate, 2, 2 };
-	lookup[0x25] = { &CPU::AND, AddrMode::ZeroPage, 2, 3 };
-	lookup[0x35] = { &CPU::AND, AddrMode::ZeroPageX, 2, 4 };
-	lookup[0x2D] = { &CPU::AND, AddrMode::Absolute, 3, 4 };
-	lookup[0x3D] = { &CPU::AND, AddrMode::AbsoluteX, 3, 4 };
-	lookup[0x39] = { &CPU::AND, AddrMode::AbsoluteY, 3, 4 };
-	lookup[0x21] = { &CPU::AND, AddrMode::IndexedIndirect, 2, 6 };
-	lookup[0x31] = { &CPU::AND, AddrMode::IndirectIndexed, 2, 5 };
+	lookup[0x29] = { InstrType::AND, AddrMode::Immediate, 2, 2 };
+	lookup[0x25] = { InstrType::AND, AddrMode::ZeroPage, 2, 3 };
+	lookup[0x35] = { InstrType::AND, AddrMode::ZeroPageX, 2, 4 };
+	lookup[0x2D] = { InstrType::AND, AddrMode::Absolute, 3, 4 };
+	lookup[0x3D] = { InstrType::AND, AddrMode::AbsoluteX, 3, 4 };
+	lookup[0x39] = { InstrType::AND, AddrMode::AbsoluteY, 3, 4 };
+	lookup[0x21] = { InstrType::AND, AddrMode::IndexedIndirect, 2, 6 };
+	lookup[0x31] = { InstrType::AND, AddrMode::IndirectIndexed, 2, 5 };
 
-	lookup[0x0A] = { &CPU::ASL, AddrMode::Accumulator, 1, 2 };
-	lookup[0x06] = { &CPU::ASL, AddrMode::ZeroPage, 2, 5 };
-	lookup[0x16] = { &CPU::ASL, AddrMode::ZeroPageX, 2, 6 };
-	lookup[0x0E] = { &CPU::ASL, AddrMode::Absolute, 3, 6 };
-	lookup[0x1E] = { &CPU::ASL, AddrMode::AbsoluteX, 3, 7 };
+	lookup[0x0A] = { InstrType::ASL, AddrMode::Accumulator, 1, 2 };
+	lookup[0x06] = { InstrType::ASL, AddrMode::ZeroPage, 2, 5 };
+	lookup[0x16] = { InstrType::ASL, AddrMode::ZeroPageX, 2, 6 };
+	lookup[0x0E] = { InstrType::ASL, AddrMode::Absolute, 3, 6 };
+	lookup[0x1E] = { InstrType::ASL, AddrMode::AbsoluteX, 3, 7 };
 
-	lookup[0x90] = { &CPU::BCC, AddrMode::Relative, 2, 2 };
+	lookup[0x90] = { InstrType::BCC, AddrMode::Relative, 2, 2 };
 
-	lookup[0xB0] = { &CPU::BCS, AddrMode::Relative, 2, 2 };
+	lookup[0xB0] = { InstrType::BCS, AddrMode::Relative, 2, 2 };
 
-	lookup[0xF0] = { &CPU::BEQ, AddrMode::Relative, 2, 2 };
+	lookup[0xF0] = { InstrType::BEQ, AddrMode::Relative, 2, 2 };
 
-	lookup[0x24] = { &CPU::BIT, AddrMode::ZeroPage, 2, 3 };
-	lookup[0x2C] = { &CPU::BIT, AddrMode::Absolute, 3, 4 };
+	lookup[0x24] = { InstrType::BIT, AddrMode::ZeroPage, 2, 3 };
+	lookup[0x2C] = { InstrType::BIT, AddrMode::Absolute, 3, 4 };
 
-	lookup[0x30] = { &CPU::BMI, AddrMode::Relative, 2, 2 };
+	lookup[0x30] = { InstrType::BMI, AddrMode::Relative, 2, 2 };
 
-	lookup[0xD0] = { &CPU::BNE, AddrMode::Relative, 2, 2 };
+	lookup[0xD0] = { InstrType::BNE, AddrMode::Relative, 2, 2 };
 
-	lookup[0x10] = { &CPU::BPL, AddrMode::Relative, 2, 2 };
+	lookup[0x10] = { InstrType::BPL, AddrMode::Relative, 2, 2 };
 
-	lookup[0x00] = { &CPU::BRK, AddrMode::Implicit, 1, 7 };
+	lookup[0x00] = { InstrType::BRK, AddrMode::Implicit, 1, 7 };
 
-	lookup[0x50] = { &CPU::BVC, AddrMode::Relative, 2, 2 };
+	lookup[0x50] = { InstrType::BVC, AddrMode::Relative, 2, 2 };
 
-	lookup[0x70] = { &CPU::BVS, AddrMode::Relative, 2, 2 };
+	lookup[0x70] = { InstrType::BVS, AddrMode::Relative, 2, 2 };
 
-	lookup[0x18] = { &CPU::CLC, AddrMode::Implicit, 1, 2 };
+	lookup[0x18] = { InstrType::CLC, AddrMode::Implicit, 1, 2 };
 
-	lookup[0xD8] = { &CPU::CLD, AddrMode::Implicit, 1, 2 };
+	lookup[0xD8] = { InstrType::CLD, AddrMode::Implicit, 1, 2 };
 
-	lookup[0x58] = { &CPU::CLI, AddrMode::Implicit, 1, 2 };
+	lookup[0x58] = { InstrType::CLI, AddrMode::Implicit, 1, 2 };
 
-	lookup[0xB8] = { &CPU::CLV, AddrMode::Implicit, 1, 2 };
+	lookup[0xB8] = { InstrType::CLV, AddrMode::Implicit, 1, 2 };
 
-	lookup[0xC9] = { &CPU::CMP, AddrMode::Immediate, 2, 2 };
-	lookup[0xC5] = { &CPU::CMP, AddrMode::ZeroPage, 2, 3 };
-	lookup[0xD5] = { &CPU::CMP, AddrMode::ZeroPageX, 2, 4 };
-	lookup[0xCD] = { &CPU::CMP, AddrMode::Absolute, 3, 4 };
-	lookup[0xDD] = { &CPU::CMP, AddrMode::AbsoluteX, 3, 4 };
-	lookup[0xD9] = { &CPU::CMP, AddrMode::AbsoluteY, 3, 4 };
-	lookup[0xC1] = { &CPU::CMP, AddrMode::IndexedIndirect, 2, 6 };
-	lookup[0xD1] = { &CPU::CMP, AddrMode::IndirectIndexed, 2, 5 };
+	lookup[0xC9] = { InstrType::CMP, AddrMode::Immediate, 2, 2 };
+	lookup[0xC5] = { InstrType::CMP, AddrMode::ZeroPage, 2, 3 };
+	lookup[0xD5] = { InstrType::CMP, AddrMode::ZeroPageX, 2, 4 };
+	lookup[0xCD] = { InstrType::CMP, AddrMode::Absolute, 3, 4 };
+	lookup[0xDD] = { InstrType::CMP, AddrMode::AbsoluteX, 3, 4 };
+	lookup[0xD9] = { InstrType::CMP, AddrMode::AbsoluteY, 3, 4 };
+	lookup[0xC1] = { InstrType::CMP, AddrMode::IndexedIndirect, 2, 6 };
+	lookup[0xD1] = { InstrType::CMP, AddrMode::IndirectIndexed, 2, 5 };
 
-	lookup[0xE0] = { &CPU::CPX, AddrMode::Immediate, 2, 2 };
-	lookup[0xE4] = { &CPU::CPX, AddrMode::ZeroPage, 2, 3 };
-	lookup[0xEC] = { &CPU::CPX, AddrMode::Absolute, 3, 4 };
+	lookup[0xE0] = { InstrType::CPX, AddrMode::Immediate, 2, 2 };
+	lookup[0xE4] = { InstrType::CPX, AddrMode::ZeroPage, 2, 3 };
+	lookup[0xEC] = { InstrType::CPX, AddrMode::Absolute, 3, 4 };
 
-	lookup[0xC0] = { &CPU::CPY, AddrMode::Immediate, 2, 2 };
-	lookup[0xC4] = { &CPU::CPY, AddrMode::ZeroPage, 2, 3 };
-	lookup[0xCC] = { &CPU::CPY, AddrMode::Absolute, 3, 4 };
+	lookup[0xC0] = { InstrType::CPY, AddrMode::Immediate, 2, 2 };
+	lookup[0xC4] = { InstrType::CPY, AddrMode::ZeroPage, 2, 3 };
+	lookup[0xCC] = { InstrType::CPY, AddrMode::Absolute, 3, 4 };
 
-	lookup[0xC6] = { &CPU::DEC, AddrMode::ZeroPage, 2, 5 };
-	lookup[0xD6] = { &CPU::DEC, AddrMode::ZeroPageX, 2, 6 };
-	lookup[0xCE] = { &CPU::DEC, AddrMode::Absolute, 3, 6 };
-	lookup[0xDE] = { &CPU::DEC, AddrMode::AbsoluteX, 3, 7 };
+	lookup[0xC6] = { InstrType::DEC, AddrMode::ZeroPage, 2, 5 };
+	lookup[0xD6] = { InstrType::DEC, AddrMode::ZeroPageX, 2, 6 };
+	lookup[0xCE] = { InstrType::DEC, AddrMode::Absolute, 3, 6 };
+	lookup[0xDE] = { InstrType::DEC, AddrMode::AbsoluteX, 3, 7 };
 
-	lookup[0xCA] = { &CPU::DEX, AddrMode::Implicit, 1, 2 };
+	lookup[0xCA] = { InstrType::DEX, AddrMode::Implicit, 1, 2 };
 
-	lookup[0x88] = { &CPU::DEX, AddrMode::Implicit, 1, 2 };
+	lookup[0x88] = { InstrType::DEX, AddrMode::Implicit, 1, 2 };
 
-	lookup[0x49] = { &CPU::EOR, AddrMode::Immediate, 2, 2 };
-	lookup[0x45] = { &CPU::EOR, AddrMode::ZeroPage, 2, 3 };
-	lookup[0x55] = { &CPU::EOR, AddrMode::ZeroPageX, 2, 4 };
-	lookup[0x4D] = { &CPU::EOR, AddrMode::Absolute, 3, 4 };
-	lookup[0x5D] = { &CPU::EOR, AddrMode::AbsoluteX, 3, 4 };
-	lookup[0x59] = { &CPU::EOR, AddrMode::AbsoluteY, 3, 4 };
-	lookup[0x41] = { &CPU::EOR, AddrMode::IndexedIndirect, 2, 6 };
-	lookup[0x51] = { &CPU::EOR, AddrMode::IndirectIndexed, 2, 5 };
+	lookup[0x49] = { InstrType::EOR, AddrMode::Immediate, 2, 2 };
+	lookup[0x45] = { InstrType::EOR, AddrMode::ZeroPage, 2, 3 };
+	lookup[0x55] = { InstrType::EOR, AddrMode::ZeroPageX, 2, 4 };
+	lookup[0x4D] = { InstrType::EOR, AddrMode::Absolute, 3, 4 };
+	lookup[0x5D] = { InstrType::EOR, AddrMode::AbsoluteX, 3, 4 };
+	lookup[0x59] = { InstrType::EOR, AddrMode::AbsoluteY, 3, 4 };
+	lookup[0x41] = { InstrType::EOR, AddrMode::IndexedIndirect, 2, 6 };
+	lookup[0x51] = { InstrType::EOR, AddrMode::IndirectIndexed, 2, 5 };
 
-	lookup[0xE6] = { &CPU::INC, AddrMode::ZeroPage, 2, 5 };
-	lookup[0xF6] = { &CPU::INC, AddrMode::ZeroPageX, 2, 6 };
-	lookup[0xEE] = { &CPU::INC, AddrMode::Absolute, 3, 6 };
-	lookup[0xFE] = { &CPU::INC, AddrMode::AbsoluteX, 3, 7 };
+	lookup[0xE6] = { InstrType::INC, AddrMode::ZeroPage, 2, 5 };
+	lookup[0xF6] = { InstrType::INC, AddrMode::ZeroPageX, 2, 6 };
+	lookup[0xEE] = { InstrType::INC, AddrMode::Absolute, 3, 6 };
+	lookup[0xFE] = { InstrType::INC, AddrMode::AbsoluteX, 3, 7 };
 
-	lookup[0xE8] = { &CPU::INX, AddrMode::Implicit, 1, 2 };
+	lookup[0xE8] = { InstrType::INX, AddrMode::Implicit, 1, 2 };
 
-	lookup[0xC8] = { &CPU::INY, AddrMode::Implicit, 1, 2 };
+	lookup[0xC8] = { InstrType::INY, AddrMode::Implicit, 1, 2 };
 
-	lookup[0x4C] = { &CPU::JMP, AddrMode::Absolute, 3, 3 };
-	lookup[0x6C] = { &CPU::JMP, AddrMode::Indirect, 3, 5 };
+	lookup[0x4C] = { InstrType::JMP, AddrMode::Absolute, 3, 3 };
+	lookup[0x6C] = { InstrType::JMP, AddrMode::Indirect, 3, 5 };
 
-	lookup[0x20] = { &CPU::JSR, AddrMode::Absolute, 3, 6 };
+	lookup[0x20] = { InstrType::JSR, AddrMode::Absolute, 3, 6 };
 
-	lookup[0xA9] = { &CPU::LDA, AddrMode::Immediate, 2, 2 };
-	lookup[0xA5] = { &CPU::LDA, AddrMode::ZeroPage, 2, 3 };
-	lookup[0xB5] = { &CPU::LDA, AddrMode::ZeroPageX, 2, 4 };
-	lookup[0xAD] = { &CPU::LDA, AddrMode::Absolute, 3, 4 };
-	lookup[0xBD] = { &CPU::LDA, AddrMode::AbsoluteX, 3, 4 };
-	lookup[0xB9] = { &CPU::LDA, AddrMode::AbsoluteY, 3, 4 };
-	lookup[0xA1] = { &CPU::LDA, AddrMode::IndexedIndirect, 2, 6 };
-	lookup[0xB1] = { &CPU::LDA, AddrMode::IndirectIndexed, 2, 5 };
+	lookup[0xA9] = { InstrType::LDA, AddrMode::Immediate, 2, 2 };
+	lookup[0xA5] = { InstrType::LDA, AddrMode::ZeroPage, 2, 3 };
+	lookup[0xB5] = { InstrType::LDA, AddrMode::ZeroPageX, 2, 4 };
+	lookup[0xAD] = { InstrType::LDA, AddrMode::Absolute, 3, 4 };
+	lookup[0xBD] = { InstrType::LDA, AddrMode::AbsoluteX, 3, 4 };
+	lookup[0xB9] = { InstrType::LDA, AddrMode::AbsoluteY, 3, 4 };
+	lookup[0xA1] = { InstrType::LDA, AddrMode::IndexedIndirect, 2, 6 };
+	lookup[0xB1] = { InstrType::LDA, AddrMode::IndirectIndexed, 2, 5 };
 
-	lookup[0xA2] = { &CPU::LDX, AddrMode::Immediate, 2, 2 };
-	lookup[0xA6] = { &CPU::LDX, AddrMode::ZeroPage, 2, 3 };
-	lookup[0xB6] = { &CPU::LDX, AddrMode::ZeroPageY, 2, 4 };
-	lookup[0xAE] = { &CPU::LDX, AddrMode::Absolute, 3, 4 };
-	lookup[0xBE] = { &CPU::LDX, AddrMode::AbsoluteY, 3, 4 };
+	lookup[0xA2] = { InstrType::LDX, AddrMode::Immediate, 2, 2 };
+	lookup[0xA6] = { InstrType::LDX, AddrMode::ZeroPage, 2, 3 };
+	lookup[0xB6] = { InstrType::LDX, AddrMode::ZeroPageY, 2, 4 };
+	lookup[0xAE] = { InstrType::LDX, AddrMode::Absolute, 3, 4 };
+	lookup[0xBE] = { InstrType::LDX, AddrMode::AbsoluteY, 3, 4 };
 
-	lookup[0xA0] = { &CPU::LDY, AddrMode::Immediate, 2, 2 };
-	lookup[0xA4] = { &CPU::LDY, AddrMode::ZeroPage, 2, 3 };
-	lookup[0xB4] = { &CPU::LDY, AddrMode::ZeroPageX, 2, 4 };
-	lookup[0xAC] = { &CPU::LDY, AddrMode::Absolute, 3, 4 };
-	lookup[0xBC] = { &CPU::LDY, AddrMode::AbsoluteX, 3, 4 };
+	lookup[0xA0] = { InstrType::LDY, AddrMode::Immediate, 2, 2 };
+	lookup[0xA4] = { InstrType::LDY, AddrMode::ZeroPage, 2, 3 };
+	lookup[0xB4] = { InstrType::LDY, AddrMode::ZeroPageX, 2, 4 };
+	lookup[0xAC] = { InstrType::LDY, AddrMode::Absolute, 3, 4 };
+	lookup[0xBC] = { InstrType::LDY, AddrMode::AbsoluteX, 3, 4 };
 
-	lookup[0x4A] = { &CPU::LSR, AddrMode::Accumulator, 1, 2 };
-	lookup[0x46] = { &CPU::LSR, AddrMode::ZeroPage, 2, 5 };
-	lookup[0x56] = { &CPU::LSR, AddrMode::ZeroPageX, 2, 6 };
-	lookup[0x4E] = { &CPU::LSR, AddrMode::Absolute, 3, 6 };
-	lookup[0x5E] = { &CPU::LSR, AddrMode::AbsoluteX, 3, 7 };
+	lookup[0x4A] = { InstrType::LSR, AddrMode::Accumulator, 1, 2 };
+	lookup[0x46] = { InstrType::LSR, AddrMode::ZeroPage, 2, 5 };
+	lookup[0x56] = { InstrType::LSR, AddrMode::ZeroPageX, 2, 6 };
+	lookup[0x4E] = { InstrType::LSR, AddrMode::Absolute, 3, 6 };
+	lookup[0x5E] = { InstrType::LSR, AddrMode::AbsoluteX, 3, 7 };
 
-	lookup[0xEA] = { &CPU::NOP, AddrMode::Implicit, 1, 2 };
+	lookup[0xEA] = { InstrType::NOP, AddrMode::Implicit, 1, 2 };
 
-	lookup[0x09] = { &CPU::ORA, AddrMode::Implicit, 2, 2 };
-	lookup[0x05] = { &CPU::ORA, AddrMode::ZeroPage, 2, 3 };
-	lookup[0x15] = { &CPU::ORA, AddrMode::ZeroPageX, 2, 4 };
-	lookup[0x0D] = { &CPU::ORA, AddrMode::Absolute, 3, 4 };
-	lookup[0x1D] = { &CPU::ORA, AddrMode::AbsoluteX, 3, 4 };
-	lookup[0x19] = { &CPU::ORA, AddrMode::AbsoluteY, 3, 4 };
-	lookup[0x01] = { &CPU::ORA, AddrMode::IndexedIndirect, 2, 6 };
-	lookup[0x11] = { &CPU::ORA, AddrMode::IndirectIndexed, 2, 5 };
+	lookup[0x09] = { InstrType::ORA, AddrMode::Implicit, 2, 2 };
+	lookup[0x05] = { InstrType::ORA, AddrMode::ZeroPage, 2, 3 };
+	lookup[0x15] = { InstrType::ORA, AddrMode::ZeroPageX, 2, 4 };
+	lookup[0x0D] = { InstrType::ORA, AddrMode::Absolute, 3, 4 };
+	lookup[0x1D] = { InstrType::ORA, AddrMode::AbsoluteX, 3, 4 };
+	lookup[0x19] = { InstrType::ORA, AddrMode::AbsoluteY, 3, 4 };
+	lookup[0x01] = { InstrType::ORA, AddrMode::IndexedIndirect, 2, 6 };
+	lookup[0x11] = { InstrType::ORA, AddrMode::IndirectIndexed, 2, 5 };
 
-	lookup[0x48] = { &CPU::PHA, AddrMode::Implicit, 1, 3 };
+	lookup[0x48] = { InstrType::PHA, AddrMode::Implicit, 1, 3 };
 
-	lookup[0x08] = { &CPU::PHP, AddrMode::Implicit, 1, 3 };
+	lookup[0x08] = { InstrType::PHP, AddrMode::Implicit, 1, 3 };
 
-	lookup[0x68] = { &CPU::PLA, AddrMode::Implicit, 1, 4 };
+	lookup[0x68] = { InstrType::PLA, AddrMode::Implicit, 1, 4 };
 
-	lookup[0x28] = { &CPU::PLP, AddrMode::Implicit, 1, 4 };
+	lookup[0x28] = { InstrType::PLP, AddrMode::Implicit, 1, 4 };
 
-	lookup[0x2A] = { &CPU::ROL, AddrMode::Accumulator, 1, 2 };
-	lookup[0x26] = { &CPU::ROL, AddrMode::ZeroPage, 2, 5 };
-	lookup[0x36] = { &CPU::ROL, AddrMode::ZeroPageX, 2, 6 };
-	lookup[0x2E] = { &CPU::ROL, AddrMode::Absolute, 3, 6 };
-	lookup[0x3E] = { &CPU::ROL, AddrMode::AbsoluteX, 3, 7 };
+	lookup[0x2A] = { InstrType::ROL, AddrMode::Accumulator, 1, 2 };
+	lookup[0x26] = { InstrType::ROL, AddrMode::ZeroPage, 2, 5 };
+	lookup[0x36] = { InstrType::ROL, AddrMode::ZeroPageX, 2, 6 };
+	lookup[0x2E] = { InstrType::ROL, AddrMode::Absolute, 3, 6 };
+	lookup[0x3E] = { InstrType::ROL, AddrMode::AbsoluteX, 3, 7 };
 
-	lookup[0x6A] = { &CPU::ROR, AddrMode::Accumulator, 1, 2 };
-	lookup[0x66] = { &CPU::ROR, AddrMode::ZeroPage, 2, 5 };
-	lookup[0x76] = { &CPU::ROR, AddrMode::ZeroPageX, 2, 6 };
-	lookup[0x6E] = { &CPU::ROR, AddrMode::Absolute, 3, 6 };
-	lookup[0x7E] = { &CPU::ROR, AddrMode::AbsoluteX, 3, 7 };
+	lookup[0x6A] = { InstrType::ROR, AddrMode::Accumulator, 1, 2 };
+	lookup[0x66] = { InstrType::ROR, AddrMode::ZeroPage, 2, 5 };
+	lookup[0x76] = { InstrType::ROR, AddrMode::ZeroPageX, 2, 6 };
+	lookup[0x6E] = { InstrType::ROR, AddrMode::Absolute, 3, 6 };
+	lookup[0x7E] = { InstrType::ROR, AddrMode::AbsoluteX, 3, 7 };
 
-	lookup[0x40] = { &CPU::RTI, AddrMode::Implicit, 1, 6 };
+	lookup[0x40] = { InstrType::RTI, AddrMode::Implicit, 1, 6 };
 
-	lookup[0x60] = { &CPU::RTS, AddrMode::Implicit, 1, 6 };
+	lookup[0x60] = { InstrType::RTS, AddrMode::Implicit, 1, 6 };
 
-	lookup[0xE9] = { &CPU::SBC, AddrMode::Immediate, 2, 2 };
-	lookup[0xE5] = { &CPU::SBC, AddrMode::ZeroPage, 2, 3 };
-	lookup[0xF5] = { &CPU::SBC, AddrMode::ZeroPageX, 2, 4 };
-	lookup[0xED] = { &CPU::SBC, AddrMode::Absolute, 3, 4 };
-	lookup[0xFD] = { &CPU::SBC, AddrMode::AbsoluteX, 3, 4 };
-	lookup[0xF9] = { &CPU::SBC, AddrMode::AbsoluteY, 3, 4 };
-	lookup[0xE1] = { &CPU::SBC, AddrMode::IndexedIndirect, 2, 6 };
-	lookup[0xF1] = { &CPU::SBC, AddrMode::IndirectIndexed, 2, 5 };
+	lookup[0xE9] = { InstrType::SBC, AddrMode::Immediate, 2, 2 };
+	lookup[0xE5] = { InstrType::SBC, AddrMode::ZeroPage, 2, 3 };
+	lookup[0xF5] = { InstrType::SBC, AddrMode::ZeroPageX, 2, 4 };
+	lookup[0xED] = { InstrType::SBC, AddrMode::Absolute, 3, 4 };
+	lookup[0xFD] = { InstrType::SBC, AddrMode::AbsoluteX, 3, 4 };
+	lookup[0xF9] = { InstrType::SBC, AddrMode::AbsoluteY, 3, 4 };
+	lookup[0xE1] = { InstrType::SBC, AddrMode::IndexedIndirect, 2, 6 };
+	lookup[0xF1] = { InstrType::SBC, AddrMode::IndirectIndexed, 2, 5 };
 
-	lookup[0x38] = { &CPU::SEC, AddrMode::Implicit, 1, 2 };
+	lookup[0x38] = { InstrType::SEC, AddrMode::Implicit, 1, 2 };
 
-	lookup[0xF8] = { &CPU::SED, AddrMode::Implicit, 1, 2 };
+	lookup[0xF8] = { InstrType::SED, AddrMode::Implicit, 1, 2 };
 
-	lookup[0x78] = { &CPU::SEI, AddrMode::Implicit, 1, 2 };
+	lookup[0x78] = { InstrType::SEI, AddrMode::Implicit, 1, 2 };
 
-	lookup[0x85] = { &CPU::STA, AddrMode::ZeroPage, 2, 3 };
-	lookup[0x95] = { &CPU::STA, AddrMode::ZeroPageX, 2, 4 };
-	lookup[0x8D] = { &CPU::STA, AddrMode::Absolute, 3, 4 };
-	lookup[0x9D] = { &CPU::STA, AddrMode::AbsoluteX, 3, 5 };
-	lookup[0x99] = { &CPU::STA, AddrMode::AbsoluteY, 3, 5 };
-	lookup[0x81] = { &CPU::STA, AddrMode::IndexedIndirect, 2, 6 };
-	lookup[0x91] = { &CPU::STA, AddrMode::IndirectIndexed, 2, 6 };
+	lookup[0x85] = { InstrType::STA, AddrMode::ZeroPage, 2, 3 };
+	lookup[0x95] = { InstrType::STA, AddrMode::ZeroPageX, 2, 4 };
+	lookup[0x8D] = { InstrType::STA, AddrMode::Absolute, 3, 4 };
+	lookup[0x9D] = { InstrType::STA, AddrMode::AbsoluteX, 3, 5 };
+	lookup[0x99] = { InstrType::STA, AddrMode::AbsoluteY, 3, 5 };
+	lookup[0x81] = { InstrType::STA, AddrMode::IndexedIndirect, 2, 6 };
+	lookup[0x91] = { InstrType::STA, AddrMode::IndirectIndexed, 2, 6 };
 
-	lookup[0x86] = { &CPU::STX, AddrMode::ZeroPage, 2, 3 };
-	lookup[0x96] = { &CPU::STX, AddrMode::ZeroPageY, 2, 4 };
-	lookup[0x8E] = { &CPU::STX, AddrMode::Absolute, 3, 4 };
+	lookup[0x86] = { InstrType::STX, AddrMode::ZeroPage, 2, 3 };
+	lookup[0x96] = { InstrType::STX, AddrMode::ZeroPageY, 2, 4 };
+	lookup[0x8E] = { InstrType::STX, AddrMode::Absolute, 3, 4 };
 
-	lookup[0x84] = { &CPU::STY, AddrMode::ZeroPage, 2, 3 };
-	lookup[0x94] = { &CPU::STY, AddrMode::ZeroPageX, 2, 4 };
-	lookup[0x8C] = { &CPU::STY, AddrMode::Absolute, 3, 4 };
+	lookup[0x84] = { InstrType::STY, AddrMode::ZeroPage, 2, 3 };
+	lookup[0x94] = { InstrType::STY, AddrMode::ZeroPageX, 2, 4 };
+	lookup[0x8C] = { InstrType::STY, AddrMode::Absolute, 3, 4 };
 
-	lookup[0xAA] = { &CPU::TAX, AddrMode::Implicit, 1, 2 };
+	lookup[0xAA] = { InstrType::TAX, AddrMode::Implicit, 1, 2 };
 
-	lookup[0xA8] = { &CPU::TAY, AddrMode::Implicit, 1, 2 };
+	lookup[0xA8] = { InstrType::TAY, AddrMode::Implicit, 1, 2 };
 
-	lookup[0xBA] = { &CPU::TSX, AddrMode::Implicit, 1, 2 };
+	lookup[0xBA] = { InstrType::TSX, AddrMode::Implicit, 1, 2 };
 
-	lookup[0x8A] = { &CPU::TXA, AddrMode::Implicit, 1, 2 };
+	lookup[0x8A] = { InstrType::TXA, AddrMode::Implicit, 1, 2 };
 
-	lookup[0x9A] = { &CPU::TXS, AddrMode::Implicit, 1, 2 };
+	lookup[0x9A] = { InstrType::TXS, AddrMode::Implicit, 1, 2 };
 
-	lookup[0x98] = { &CPU::TYA, AddrMode::Implicit, 1, 2 };
+	lookup[0x98] = { InstrType::TYA, AddrMode::Implicit, 1, 2 };
 
 	return lookup;
 }();
 
-CPU::CPU(Bus& bus) : m_Bus{ bus }
+void CPU::Init(Bus* bus)
 {
+	m_Bus = bus;
 	m_Regs.A = 0;
 	m_Regs.X = 0;
 	m_Regs.Y = 0;
-	//m_Regs.PC = ReadWord(0xFFFC);
 	m_Regs.PC = 0xC000;
 	m_Regs.S = 0xFD;
 	m_StatusReg = StatusFlag::InterruptDisable;
@@ -236,6 +238,7 @@ CPU::CPU(Bus& bus) : m_Bus{ bus }
 
 void CPU::PerformCycle()
 {
+	m_TotalCycles++;
 	if (m_InstructionRemainingCycles > 0)
 	{
 		m_InstructionRemainingCycles--;
@@ -248,44 +251,79 @@ void CPU::PerformCycle()
 	}
 
 	const uint8_t opCode = Read(m_Regs.PC);
+	
+	m_CurrentInstruction = s_OpcodeLookup[opCode];
+	PrintState();
+	ExecuteInstruction();
 
-	const Instruction& instruction = s_OpcodeLookup[opCode];
-
-	const uint8_t addCycles = (this->*instruction.op)(instruction.addrMode);
-	m_InstructionRemainingCycles = addCycles + instruction.cycleCount;
 	if (!m_PCManuallySet)
-		m_Regs.PC += instruction.byteCount;
-
-	if (Read(m_Regs.PC) == 0x04)
-		__debugbreak();
+		m_Regs.PC += m_CurrentInstruction.byteCount;
 
 	m_InterruptDisableDelay = INTERRUPT_DISABLE_DELAY_NONE;
 	m_PCManuallySet = false;
 }
 
+void CPU::PrintState() const
+{
+	char buf[128];
+
+	const int instrBytes = m_CurrentInstruction.byteCount;
+
+	const int n = std::snprintf(buf, sizeof(buf),
+		"%04X  %02X %02X %02X  %s \tA:%02X X:%02X Y:%02X P:%02X S:%02X\n",
+		m_Regs.PC,
+		Read(m_Regs.PC),
+		instrBytes > 1 ? Read(m_Regs.PC + 1) : 0,
+		instrBytes > 2 ? Read(m_Regs.PC + 2) : 0,
+		DebugUtils::InstrTypeToStr(m_CurrentInstruction.instrType),
+		m_Regs.A, m_Regs.X, m_Regs.Y, m_StatusReg.GetRaw(), m_Regs.S
+	);
+	
+	if (instrBytes < 2)
+	{
+		buf[9] = ' ';
+		buf[10] = ' ';
+	}
+	if (instrBytes < 3)
+	{
+		buf[12] = ' ';
+		buf[13] = ' ';
+	}
+
+	std::fwrite(buf, 1, n, stdout);
+}
+
+void CPU::ExecuteInstruction()
+{
+	const InstructionFunc f = ResolveInstructionFunction(m_CurrentInstruction.instrType);
+
+	const uint8_t addCycles = (this->*f)(m_CurrentInstruction.addrMode);
+	m_InstructionRemainingCycles = addCycles + m_CurrentInstruction.cycleCount;
+}
+
 uint8_t CPU::Read(uint16_t addr) const
 {
-	return m_Bus.Read(addr);
+	return m_Bus->Read(addr);
 }
 
 uint16_t CPU::ReadWord(uint16_t addr) const
 {
-	const uint8_t low = m_Bus.Read(addr);
-	const uint8_t high = m_Bus.Read(addr + 1);
+	const uint8_t low = m_Bus->Read(addr);
+	const uint8_t high = m_Bus->Read(addr + 1);
 	return low | (high << 8);
 }
 
 void CPU::Write(uint16_t addr, uint8_t val)
 {
-	return m_Bus.Write(addr, val);
+	return m_Bus->Write(addr, val);
 }
 
 void CPU::WriteWord(uint16_t addr, uint16_t val)
 {
 	const uint8_t low = val & 0xFF;
 	const uint8_t high = (val >> 8) & 0xFF;
-	m_Bus.Write(addr, low);
-	m_Bus.Write(addr + 1, high);
+	m_Bus->Write(addr, low);
+	m_Bus->Write(addr + 1, high);
 }
 
 void CPU::PushStack(uint8_t val)
@@ -374,34 +412,86 @@ uint16_t CPU::ResolveAddress(AddrMode addrMode) const
 {
 	switch (addrMode)
 	{
-	case AddrMode::Implicit:
-		return ResolveImplicit();
-	case AddrMode::Accumulator:
-		return ResolveAccumulator();
-	case AddrMode::Immediate:
-		return ResolveImmediate();
-	case AddrMode::ZeroPage:
-		return ResolveZeroPage();
-	case AddrMode::ZeroPageX:
-		return ResolveZeroPageX();
-	case AddrMode::ZeroPageY:
-		return ResolveZeroPageY();
-	case AddrMode::Relative:
-		return ResolveRelative();
-	case AddrMode::Absolute:
-		return ResolveAbsolute();
-	case AddrMode::AbsoluteX:
-		return ResolveAbsoluteX();
-	case AddrMode::AbsoluteY:
-		return ResolveAbsoluteY();
-	case AddrMode::Indirect:
-		return ResolveIndirect();
-	case AddrMode::IndexedIndirect:
-		return ResolveIndexedIndirect();
-	case AddrMode::IndirectIndexed:
-		return ResolveIndirectIndexed();
-	default:
-		return 0;
+	case AddrMode::None: return 0;
+	case AddrMode::Implicit: return ResolveImplicit();
+	case AddrMode::Accumulator: return ResolveAccumulator();
+	case AddrMode::Immediate: return ResolveImmediate();
+	case AddrMode::ZeroPage: return ResolveZeroPage();
+	case AddrMode::ZeroPageX: return ResolveZeroPageX();
+	case AddrMode::ZeroPageY: return ResolveZeroPageY();
+	case AddrMode::Relative: return ResolveRelative();
+	case AddrMode::Absolute: return ResolveAbsolute();
+	case AddrMode::AbsoluteX: return ResolveAbsoluteX();
+	case AddrMode::AbsoluteY: return ResolveAbsoluteY();
+	case AddrMode::Indirect: return ResolveIndirect();
+	case AddrMode::IndexedIndirect: return ResolveIndexedIndirect();
+	case AddrMode::IndirectIndexed: return ResolveIndirectIndexed();
+	default: return 0;
+	}
+}
+
+InstructionFunc CPU::ResolveInstructionFunction(InstrType instrType) const
+{
+	switch (instrType)
+	{
+	case InstrType::None: return nullptr;
+	case InstrType::ADC:  return &CPU::ADC;
+	case InstrType::AND:  return &CPU::AND;
+	case InstrType::ASL:  return &CPU::ASL;
+	case InstrType::BCC:  return &CPU::BCC;
+	case InstrType::BCS:  return &CPU::BCS;
+	case InstrType::BEQ:  return &CPU::BEQ;
+	case InstrType::BIT:  return &CPU::BIT;
+	case InstrType::BMI:  return &CPU::BMI;
+	case InstrType::BNE:  return &CPU::BNE;
+	case InstrType::BPL:  return &CPU::BPL;
+	case InstrType::BRK:  return &CPU::BRK;
+	case InstrType::BVC:  return &CPU::BVC;
+	case InstrType::BVS:  return &CPU::BVS;
+	case InstrType::CLC:  return &CPU::CLC;
+	case InstrType::CLD:  return &CPU::CLD;
+	case InstrType::CLI:  return &CPU::CLI;
+	case InstrType::CLV:  return &CPU::CLV;
+	case InstrType::CMP:  return &CPU::CMP;
+	case InstrType::CPX:  return &CPU::CPX;
+	case InstrType::CPY:  return &CPU::CPY;
+	case InstrType::DEC:  return &CPU::DEC;
+	case InstrType::DEX:  return &CPU::DEX;
+	case InstrType::DEY:  return &CPU::DEY;
+	case InstrType::EOR:  return &CPU::EOR;
+	case InstrType::INC:  return &CPU::INC;
+	case InstrType::INX:  return &CPU::INX;
+	case InstrType::INY:  return &CPU::INY;
+	case InstrType::JMP:  return &CPU::JMP;
+	case InstrType::JSR:  return &CPU::JSR;
+	case InstrType::LDA:  return &CPU::LDA;
+	case InstrType::LDX:  return &CPU::LDX;
+	case InstrType::LDY:  return &CPU::LDY;
+	case InstrType::LSR:  return &CPU::LSR;
+	case InstrType::NOP:  return &CPU::NOP;
+	case InstrType::ORA:  return &CPU::ORA;
+	case InstrType::PHA:  return &CPU::PHA;
+	case InstrType::PHP:  return &CPU::PHP;
+	case InstrType::PLA:  return &CPU::PLA;
+	case InstrType::PLP:  return &CPU::PLP;
+	case InstrType::ROL:  return &CPU::ROL;
+	case InstrType::ROR:  return &CPU::ROR;
+	case InstrType::RTI:  return &CPU::RTI;
+	case InstrType::RTS:  return &CPU::RTS;
+	case InstrType::SBC:  return &CPU::SBC;
+	case InstrType::SEC:  return &CPU::SEC;
+	case InstrType::SED:  return &CPU::SED;
+	case InstrType::SEI:  return &CPU::SEI;
+	case InstrType::STA:  return &CPU::STA;
+	case InstrType::STX:  return &CPU::STX;
+	case InstrType::STY:  return &CPU::STY;
+	case InstrType::TAX:  return &CPU::TAX;
+	case InstrType::TAY:  return &CPU::TAY;
+	case InstrType::TSX:  return &CPU::TSX;
+	case InstrType::TXA:  return &CPU::TXA;
+	case InstrType::TXS:  return &CPU::TXS;
+	case InstrType::TYA:  return &CPU::TYA;
+	default: return nullptr;
 	}
 }
 
@@ -835,7 +925,7 @@ uint8_t CPU::ROL(AddrMode addrMode)
 	const uint16_t addr = ResolveAddress(addrMode);
 	const uint8_t val = Read(addr);
 	Write(addr, val);
-	const uint8_t res = (val << 1) | m_StatusReg.Test(StatusFlag::Carry);
+	const uint8_t res = (val << 1) | (m_StatusReg.Test(StatusFlag::Carry) ? 1 : 0);
 	m_StatusReg.Set(StatusFlag::Carry, val & 0x80);
 	m_StatusReg.Set(StatusFlag::Zero, res == 0);
 	m_StatusReg.Set(StatusFlag::Negative, res & 0x80);

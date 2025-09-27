@@ -2,22 +2,20 @@
 
 #include <memory>
 #include <filesystem>
-#include "CPU.h"
-#include "Bus.h"
+#include "System.h"
 
 int main()
 {
 	using namespace std::filesystem;
 
-	auto bus = std::make_unique<Bus>();
+	auto system = std::make_unique<System>();
+	system->Init();
 
-	bus->LoadROM("C:\\Users\\shane\\source\\repos\\NES-Emulator\\nestest.nes");
-	
-	CPU cpu{ *bus };
+	system->LoadROM("C:\\Users\\shane\\source\\repos\\NES-Emulator\\nestest.nes");
 
 	while (true)
 	{
-		cpu.PerformCycle();
+		system->PerformCycle();
 	}
 
 	return 0;
