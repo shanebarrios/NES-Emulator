@@ -1,8 +1,6 @@
 #pragma once
 
-#include <array>
-#include <cstdint>
-#include <filesystem>
+#include "Common.h"
 
 class CPU;
 class Cartridge;
@@ -22,5 +20,5 @@ public:
 private:
 	CPU* m_CPU = nullptr;
 	Cartridge* m_Cartridge = nullptr;
-	uint8_t* m_RAM = nullptr;
+	u8* m_RAM = nullptr;
 };

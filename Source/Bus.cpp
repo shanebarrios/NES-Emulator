@@ -7,14 +7,14 @@
 #include "CPU.h"
 #include "Cartridge.h"
 
-void Bus::Attach(CPU* _cpu, Cartridge* cartridge, uint8_t* ram)
+void Bus::Attach(CPU* _cpu, Cartridge* cartridge, u8* ram)
 {
 	m_CPU = _cpu;
 	m_Cartridge = cartridge;
 	m_RAM = ram;
 }
 
-uint8_t Bus::Read(uint16_t addr) const
+u8 Bus::Read(u16 addr) const
 {
 	if (addr < 0x2000)
 	{
@@ -44,7 +44,7 @@ uint8_t Bus::Read(uint16_t addr) const
 	return 0;
 }
 
-void Bus::Write(uint16_t addr, uint8_t val)
+void Bus::Write(u16 addr, u8 val)
 {
 	if (addr < 0x2000)
 	{

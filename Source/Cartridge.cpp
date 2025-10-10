@@ -38,12 +38,12 @@ void Cartridge::LoadROM(const std::filesystem::path& path)
 	}
 }
 
-uint8_t Cartridge::ReadROM(uint16_t addr) const
+u8 Cartridge::ReadROM(u16 addr) const
 {
 	return m_ROM[addr];
 }
 
-uint8_t Cartridge::ReadRAM(uint16_t addr) const
+u8 Cartridge::ReadRAM(u16 addr) const
 {
 	return m_RAM[addr];
 }

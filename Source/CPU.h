@@ -1,12 +1,11 @@
 #pragma once
 
-#include <cstdint>
+#include "Common.h"
 #include <array>
-#include <optional>
 
 class Bus;
 
-enum class StatusFlag : uint8_t
+enum class StatusFlag : u8
 {
 	Carry = 1 << 0,
 	Zero = 1 << 1,
@@ -47,8 +46,7 @@ enum class InstrType
 
 class CPU;
 
-typedef uint8_t (CPU::*InstructionFunc)(AddrMode);
-
+typedef u8 (CPU::*InstructionFunc)(AddrMode);
 
 struct Instruction
 {
@@ -60,47 +58,47 @@ struct Instruction
 
 inline StatusFlag operator|(StatusFlag a, StatusFlag b)
 {
-	return static_cast<StatusFlag>(static_cast<uint8_t>(a) | static_cast<uint8_t>(b));
+	return static_cast<StatusFlag>(static_cast<u8>(a) | static_cast<u8>(b));
 }
 
 inline StatusFlag operator&(StatusFlag a, StatusFlag b)
 {
-	return static_cast<StatusFlag>(static_cast<uint8_t>(a) & static_cast<uint8_t>(b));
+	return static_cast<StatusFlag>(static_cast<u8>(a) & static_cast<u8>(b));
 }
 
 inline StatusFlag operator~(StatusFlag a)
 {
-	return static_cast<StatusFlag>(~static_cast<uint8_t>(a));
+	return static_cast<StatusFlag>(~static_cast<u8>(a));
 }
 
 class StatusRegister
 {
 public:
 	StatusRegister() = default;
-	explicit StatusRegister(uint8_t flags) : m_Flags{ flags } {}
+	explicit StatusRegister(u8 flags) : m_Flags{ flags } {}
 
-	StatusRegister& Set(StatusFlag flag) { m_Flags |= static_cast<uint8_t>(flag); return *this; }
+	StatusRegister& Set(StatusFlag flag) { m_Flags |= static_cast<u8>(flag); return *this; }
 	StatusRegister& Set(StatusFlag flag, bool on) { return on ? Set(flag) : Clear(flag); }
 
-	StatusRegister& Clear(StatusFlag flag) { m_Flags &= ~static_cast<uint8_t>(flag); return *this; }
+	StatusRegister& Clear(StatusFlag flag) { m_Flags &= ~static_cast<u8>(flag); return *this; }
 
-	bool Test(StatusFlag flag) const { return m_Flags & static_cast<uint8_t>(flag); }
+	bool Test(StatusFlag flag) const { return m_Flags & static_cast<u8>(flag); }
 
-	StatusRegister operator|(StatusFlag flag) const { return StatusRegister{ static_cast<uint8_t>(m_Flags | static_cast<uint8_t>(flag)) }; }
-	StatusRegister operator&(StatusFlag flag) const { return StatusRegister{ static_cast<uint8_t>(m_Flags & static_cast<uint8_t>(flag)) }; }
+	StatusRegister operator|(StatusFlag flag) const { return StatusRegister{ static_cast<u8>(m_Flags | static_cast<u8>(flag)) }; }
+	StatusRegister operator&(StatusFlag flag) const { return StatusRegister{ static_cast<u8>(m_Flags & static_cast<u8>(flag)) }; }
 	StatusRegister& operator|=(StatusFlag flag) { return Set(flag); }
-	StatusRegister& operator&=(StatusFlag flag) { m_Flags &= static_cast<uint8_t>(flag); return *this; }
-	StatusRegister& operator=(StatusFlag flag) { m_Flags = static_cast<uint8_t>(flag); return *this; }
+	StatusRegister& operator&=(StatusFlag flag) { m_Flags &= static_cast<u8>(flag); return *this; }
+	StatusRegister& operator=(StatusFlag flag) { m_Flags = static_cast<u8>(flag); return *this; }
 
 	operator bool() const { return m_Flags != 0; }
 	bool operator!() const { return m_Flags == 0; }
 
-	uint8_t GetRaw() const { return m_Flags; }
+	u8 GetRaw() const { return m_Flags; }
 
-	uint8_t& GetRaw() { return m_Flags; }
+	u8& GetRaw() { return m_Flags; }
 
 private:
-	uint8_t m_Flags = 0;
+	u8 m_Flags = 0;
 };
 
 class CPU
@@ -124,59 +122,59 @@ private:
 
 	InstructionFunc ResolveInstructionFunction(InstrType instrType) const;
 
-	uint8_t Read(uint16_t addr) const;
-	uint16_t ReadWord(uint16_t addr) const;
+	u8 Read(u16 addr) const;
+	u16 ReadWord(u16 addr) const;
 
-	void Write(uint16_t addr, uint8_t val);
-	void WriteWord(uint16_t addr, uint16_t val);
+	void Write(u16 addr, u8 val);
+	void WriteWord(u16 addr, u16 val);
 
-	void PushStack(uint8_t val);
-	void PushStackWord(uint16_t val);
+	void PushStack(u8 val);
+	void PushStackWord(u16 val);
 
-	uint8_t PopStack();
-	uint16_t PopStackWord();
+	u8 PopStack();
+	u16 PopStackWord();
 
-	uint8_t PeekStack() const;
-	uint16_t PeekStackWord() const;
+	u8 PeekStack() const;
+	u16 PeekStackWord() const;
 
 	bool AddsCycle(AddrMode addrMode) const;
 
-	uint8_t Branch(uint16_t addr);
+	u8 Branch(u16 addr);
 
 	// ========== Address modes =========
 
-	uint16_t ResolveAddress(AddrMode) const;
+	u16 ResolveAddress(AddrMode) const;
 
-	uint16_t ResolveImplicit() const;
-	uint16_t ResolveAccumulator() const;
-	uint16_t ResolveImmediate() const;
-	uint16_t ResolveZeroPage() const;
-	uint16_t ResolveZeroPageX() const;
-	uint16_t ResolveZeroPageY() const;
-	uint16_t ResolveRelative() const;
-	uint16_t ResolveAbsolute() const;
-	uint16_t ResolveAbsoluteX() const;
-	uint16_t ResolveAbsoluteY() const;
-	uint16_t ResolveIndirect() const;
-	uint16_t ResolveIndexedIndirect() const;
-	uint16_t ResolveIndirectIndexed() const;
+	u16 ResolveImplicit() const;
+	u16 ResolveAccumulator() const;
+	u16 ResolveImmediate() const;
+	u16 ResolveZeroPage() const;
+	u16 ResolveZeroPageX() const;
+	u16 ResolveZeroPageY() const;
+	u16 ResolveRelative() const;
+	u16 ResolveAbsolute() const;
+	u16 ResolveAbsoluteX() const;
+	u16 ResolveAbsoluteY() const;
+	u16 ResolveIndirect() const;
+	u16 ResolveIndexedIndirect() const;
+	u16 ResolveIndirectIndexed() const;
 
 	// ========== Operations ============
 
-	uint8_t ADC(AddrMode); uint8_t AND(AddrMode); uint8_t ASL(AddrMode); uint8_t BCC(AddrMode);
-	uint8_t BCS(AddrMode); uint8_t BEQ(AddrMode); uint8_t BIT(AddrMode); uint8_t BMI(AddrMode);
-	uint8_t BNE(AddrMode); uint8_t BPL(AddrMode); uint8_t BRK(AddrMode); uint8_t BVC(AddrMode);
-	uint8_t BVS(AddrMode); uint8_t CLC(AddrMode); uint8_t CLD(AddrMode); uint8_t CLI(AddrMode);
-	uint8_t CLV(AddrMode); uint8_t CMP(AddrMode); uint8_t CPX(AddrMode); uint8_t CPY(AddrMode);
-	uint8_t DEC(AddrMode); uint8_t DEX(AddrMode); uint8_t DEY(AddrMode); uint8_t EOR(AddrMode);
-	uint8_t INC(AddrMode); uint8_t INX(AddrMode); uint8_t INY(AddrMode); uint8_t JMP(AddrMode);
-	uint8_t JSR(AddrMode); uint8_t LDA(AddrMode); uint8_t LDX(AddrMode); uint8_t LDY(AddrMode);
-	uint8_t LSR(AddrMode); uint8_t NOP(AddrMode); uint8_t ORA(AddrMode); uint8_t PHA(AddrMode);
-	uint8_t PHP(AddrMode); uint8_t PLA(AddrMode); uint8_t PLP(AddrMode); uint8_t ROL(AddrMode);
-	uint8_t ROR(AddrMode); uint8_t RTI(AddrMode); uint8_t RTS(AddrMode); uint8_t SBC(AddrMode);
-	uint8_t SEC(AddrMode); uint8_t SED(AddrMode); uint8_t SEI(AddrMode); uint8_t STA(AddrMode);
-	uint8_t STX(AddrMode); uint8_t STY(AddrMode); uint8_t TAX(AddrMode); uint8_t TAY(AddrMode);
-	uint8_t TSX(AddrMode); uint8_t TXA(AddrMode); uint8_t TXS(AddrMode); uint8_t TYA(AddrMode);
+	u8 ADC(AddrMode); u8 AND(AddrMode); u8 ASL(AddrMode); u8 BCC(AddrMode);
+	u8 BCS(AddrMode); u8 BEQ(AddrMode); u8 BIT(AddrMode); u8 BMI(AddrMode);
+	u8 BNE(AddrMode); u8 BPL(AddrMode); u8 BRK(AddrMode); u8 BVC(AddrMode);
+	u8 BVS(AddrMode); u8 CLC(AddrMode); u8 CLD(AddrMode); u8 CLI(AddrMode);
+	u8 CLV(AddrMode); u8 CMP(AddrMode); u8 CPX(AddrMode); u8 CPY(AddrMode);
+	u8 DEC(AddrMode); u8 DEX(AddrMode); u8 DEY(AddrMode); u8 EOR(AddrMode);
+	u8 INC(AddrMode); u8 INX(AddrMode); u8 INY(AddrMode); u8 JMP(AddrMode);
+	u8 JSR(AddrMode); u8 LDA(AddrMode); u8 LDX(AddrMode); u8 LDY(AddrMode);
+	u8 LSR(AddrMode); u8 NOP(AddrMode); u8 ORA(AddrMode); u8 PHA(AddrMode);
+	u8 PHP(AddrMode); u8 PLA(AddrMode); u8 PLP(AddrMode); u8 ROL(AddrMode);
+	u8 ROR(AddrMode); u8 RTI(AddrMode); u8 RTS(AddrMode); u8 SBC(AddrMode);
+	u8 SEC(AddrMode); u8 SED(AddrMode); u8 SEI(AddrMode); u8 STA(AddrMode);
+	u8 STX(AddrMode); u8 STY(AddrMode); u8 TAX(AddrMode); u8 TAY(AddrMode);
+	u8 TSX(AddrMode); u8 TXA(AddrMode); u8 TXS(AddrMode); u8 TYA(AddrMode);
 
 private:
 	Bus* m_Bus = nullptr;
@@ -185,19 +183,19 @@ private:
 	
 	struct
 	{
-		uint8_t A;
-		uint8_t X;
-		uint8_t Y;
-		uint16_t PC;
-		uint8_t S;
+		u8 A;
+		u8 X;
+		u8 Y;
+		u16 PC;
+		u8 S;
 	} m_Regs{};
 
 	Instruction m_CurrentInstruction{};
 
-	uint8_t m_InstructionRemainingCycles = 0;
-	uint8_t m_InterruptDisableDelay = 0;
+	u8 m_InstructionRemainingCycles = 0;
+	u8 m_InterruptDisableDelay = 0;
 
 	bool m_PCManuallySet = false;
 
-	uint64_t m_TotalCycles = 0;
+	u64 m_TotalCycles = 0;
 };

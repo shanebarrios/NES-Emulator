@@ -6,11 +6,11 @@
 #include <stdio.h>
 #include <string.h>
 
-static constexpr uint8_t INTERRUPT_DISABLE_DELAY_NONE = 0x0;
-static constexpr uint8_t INTERRUPT_DISABLE_DELAY_OFF = 0x1;
-static constexpr uint8_t INTERRUPT_DISABLE_DELAY_ON = 0x3;
+static constexpr u8 INTERRUPT_DISABLE_DELAY_NONE = 0x0;
+static constexpr u8 INTERRUPT_DISABLE_DELAY_OFF = 0x1;
+static constexpr u8 INTERRUPT_DISABLE_DELAY_ON = 0x3;
 
-static constexpr uint16_t STACK_BEGIN = 0x0100;
+static constexpr u16 STACK_BEGIN = 0x0100;
 
 const std::array<Instruction, 256> CPU::s_OpcodeLookup = [] {
 	std::array<Instruction, 256> lookup{};
@@ -258,9 +258,14 @@ void CPU::PerformCycle()
 	//	m_StatusReg.Set(StatusFlag::InterruptDisable, m_InterruptDisableDelay == INTERRUPT_DISABLE_DELAY_ON);
 	//}
 
-	const uint8_t opCode = Read(m_Regs.PC);
+	const u8 opCode = Read(m_Regs.PC);
 	
 	m_CurrentInstruction = s_OpcodeLookup[opCode];
+	if (m_CurrentInstruction.instrType == InstrType::None)
+	{
+		// Treat as NOP if illegal op
+		m_CurrentInstruction = s_OpcodeLookup[0xEA];
+	}
 	PrintState();
 	ExecuteInstruction();
 
@@ -279,13 +284,13 @@ void CPU::PrintState() const
 
 	char addrBuf[32];
 
-	uint16_t operand = 0;
+	u16 operand = 0;
 	if (m_CurrentInstruction.byteCount == 2)
 		operand = Read(m_Regs.PC + 1);
 	if (m_CurrentInstruction.byteCount == 3)
 		operand = ReadWord(m_Regs.PC + 1);
 
-	const uint16_t addr = ResolveAddress(m_CurrentInstruction.addrMode);
+	const u16 addr = ResolveAddress(m_CurrentInstruction.addrMode);
 
 	DebugUtils::AddrModeToStr(
 		m_CurrentInstruction.addrMode,
@@ -325,72 +330,72 @@ void CPU::ExecuteInstruction()
 {
 	const InstructionFunc f = ResolveInstructionFunction(m_CurrentInstruction.instrType);
 
-	const uint8_t addCycles = (this->*f)(m_CurrentInstruction.addrMode);
+	const u8 addCycles = (this->*f)(m_CurrentInstruction.addrMode);
 	m_InstructionRemainingCycles = addCycles + m_CurrentInstruction.cycleCount;
 }
 
-uint8_t CPU::Read(uint16_t addr) const
+u8 CPU::Read(u16 addr) const
 {
 	return m_Bus->Read(addr);
 }
 
-uint16_t CPU::ReadWord(uint16_t addr) const
+u16 CPU::ReadWord(u16 addr) const
 {
-	const uint8_t low = m_Bus->Read(addr);
-	const uint8_t high = m_Bus->Read(addr + 1);
+	const u8 low = m_Bus->Read(addr);
+	const u8 high = m_Bus->Read(addr + 1);
 	return low | (high << 8);
 }
 
-void CPU::Write(uint16_t addr, uint8_t val)
+void CPU::Write(u16 addr, u8 val)
 {
 	return m_Bus->Write(addr, val);
 }
 
-void CPU::WriteWord(uint16_t addr, uint16_t val)
+void CPU::WriteWord(u16 addr, u16 val)
 {
-	const uint8_t low = val & 0xFF;
-	const uint8_t high = (val >> 8) & 0xFF;
+	const u8 low = val & 0xFF;
+	const u8 high = (val >> 8) & 0xFF;
 	m_Bus->Write(addr, low);
 	m_Bus->Write(addr + 1, high);
 }
 
-void CPU::PushStack(uint8_t val)
+void CPU::PushStack(u8 val)
 {
 	Write(m_Regs.S + STACK_BEGIN, val);
 	ASSERT_MSG(m_Regs.S != 0, "Stack overflow!");
 	m_Regs.S--;
 }
 
-void CPU::PushStackWord(uint16_t val)
+void CPU::PushStackWord(u16 val)
 {
-	const uint8_t low = val & 0xFF;
-	const uint8_t high = (val >> 8) & 0xFF;
+	const u8 low = val & 0xFF;
+	const u8 high = (val >> 8) & 0xFF;
 	PushStack(high);
 	PushStack(low);
 }
 
-uint8_t CPU::PopStack()
+u8 CPU::PopStack()
 {
 	m_Regs.S++;
 	return Read(m_Regs.S + STACK_BEGIN);
 }
 
-uint16_t CPU::PopStackWord()
+u16 CPU::PopStackWord()
 {
-	const uint8_t low = PopStack();
-	const uint8_t high = PopStack();
+	const u8 low = PopStack();
+	const u8 high = PopStack();
 	return low | (high << 8);
 }
 
-uint8_t CPU::PeekStack() const
+u8 CPU::PeekStack() const
 {
 	return Read(m_Regs.S + 1 + STACK_BEGIN);
 }
 
-uint16_t CPU::PeekStackWord() const
+u16 CPU::PeekStackWord() const
 {
-	const uint8_t low = Read(m_Regs.S + 1 + STACK_BEGIN);
-	const uint8_t high = Read(m_Regs.S + 2 + STACK_BEGIN);
+	const u8 low = Read(m_Regs.S + 1 + STACK_BEGIN);
+	const u8 high = Read(m_Regs.S + 2 + STACK_BEGIN);
 	return low | (high << 8);
 }
 
@@ -400,24 +405,24 @@ bool CPU::AddsCycle(AddrMode addrMode) const
 	{
 	case AddrMode::AbsoluteX:
 	{
-		const uint16_t base = ReadWord(m_Regs.PC + 1);
-		const uint16_t addr = base + m_Regs.X;
+		const u16 base = ReadWord(m_Regs.PC + 1);
+		const u16 addr = base + m_Regs.X;
 		return (base & 0xFF00) != (addr & 0xFF00);
 	}
 	case AddrMode::AbsoluteY:
 	{
-		const uint16_t base = ReadWord(m_Regs.PC + 1);
-		const uint16_t addr = base + m_Regs.Y;
+		const u16 base = ReadWord(m_Regs.PC + 1);
+		const u16 addr = base + m_Regs.Y;
 		return (base & 0xFF00) != (addr & 0xFF00);
 	}
 
 	case AddrMode::IndirectIndexed: 
 	{
-		const uint8_t arg = Read(m_Regs.PC + 1);
-		const uint8_t low = Read(arg);
-		const uint8_t high = Read((arg + 1) & 0xFF);
-		const uint16_t base = low | (high << 8);
-		const uint16_t addr = base + m_Regs.Y;
+		const u8 arg = Read(m_Regs.PC + 1);
+		const u8 low = Read(arg);
+		const u8 high = Read((arg + 1) & 0xFF);
+		const u16 base = low | (high << 8);
+		const u16 addr = base + m_Regs.Y;
 		return (base & 0xFF00) != (addr & 0xFF00);
 	}
 	default:
@@ -425,10 +430,10 @@ bool CPU::AddsCycle(AddrMode addrMode) const
 	}
 }
 
-uint8_t CPU::Branch(uint16_t addr)
+u8 CPU::Branch(u16 addr)
 {
-	const uint16_t updated = addr;
-	uint8_t addCycles = 1;
+	const u16 updated = addr;
+	u8 addCycles = 1;
 	if ((updated & 0xFF00) != ((m_Regs.PC + m_CurrentInstruction.byteCount) & 0xFF00))
 		addCycles++;
 	m_Regs.PC = updated;
@@ -436,7 +441,7 @@ uint8_t CPU::Branch(uint16_t addr)
 	return addCycles;
 }
 
-uint16_t CPU::ResolveAddress(AddrMode addrMode) const
+u16 CPU::ResolveAddress(AddrMode addrMode) const
 {
 	switch (addrMode)
 	{
@@ -523,39 +528,39 @@ InstructionFunc CPU::ResolveInstructionFunction(InstrType instrType) const
 	}
 }
 
-uint16_t CPU::ResolveImplicit() const
+u16 CPU::ResolveImplicit() const
 {
 	return 0;
 }
 
-uint16_t CPU::ResolveAccumulator() const
+u16 CPU::ResolveAccumulator() const
 {
 	return 0;
 }
 
-uint16_t CPU::ResolveImmediate() const
+u16 CPU::ResolveImmediate() const
 {
 	return m_Regs.PC + 1;
 }
 
-uint16_t CPU::ResolveZeroPage() const
+u16 CPU::ResolveZeroPage() const
 {
 	return Read(m_Regs.PC + 1);
 }
 
-uint16_t CPU::ResolveZeroPageX() const
+u16 CPU::ResolveZeroPageX() const
 {
 	return (Read(m_Regs.PC + 1) + m_Regs.X) & 0xFF;
 }
 
-uint16_t CPU::ResolveZeroPageY() const
+u16 CPU::ResolveZeroPageY() const
 {
 	return (Read(m_Regs.PC + 1) + m_Regs.Y) & 0xFF;
 }
 
-uint16_t CPU::ResolveRelative() const
+u16 CPU::ResolveRelative() const
 {
-	uint16_t addr = Read(m_Regs.PC + 1);
+	u16 addr = Read(m_Regs.PC + 1);
 	if (addr & 0x80)
 	{
 		addr |= 0xFF00;
@@ -563,51 +568,51 @@ uint16_t CPU::ResolveRelative() const
 	return addr + m_Regs.PC + 2;
 }
 
-uint16_t CPU::ResolveAbsolute() const
+u16 CPU::ResolveAbsolute() const
 {
 	return ReadWord(m_Regs.PC + 1);
 }
 
-uint16_t CPU::ResolveAbsoluteX() const
+u16 CPU::ResolveAbsoluteX() const
 {
 	return ReadWord(m_Regs.PC + 1) + m_Regs.X;
 }
 
-uint16_t CPU::ResolveAbsoluteY() const
+u16 CPU::ResolveAbsoluteY() const
 {
 	return ReadWord(m_Regs.PC + 1) + m_Regs.Y;
 }
 
-uint16_t CPU::ResolveIndirect() const
+u16 CPU::ResolveIndirect() const
 {
-	const uint16_t addr = ReadWord(m_Regs.PC + 1);
-	const uint8_t low = Read(addr);
+	const u16 addr = ReadWord(m_Regs.PC + 1);
+	const u8 low = Read(addr);
 	// Intentional bug
-	const uint8_t high = ((addr & 0xFF) == 0xFF) ? Read(addr & 0xFF00) : Read(addr + 1);
+	const u8 high = ((addr & 0xFF) == 0xFF) ? Read(addr & 0xFF00) : Read(addr + 1);
 	return low | (high << 8);
 }
 
-uint16_t CPU::ResolveIndexedIndirect() const
+u16 CPU::ResolveIndexedIndirect() const
 {
-	const uint8_t arg = Read(m_Regs.PC + 1);
-	const uint8_t low = Read((arg + m_Regs.X) & 0xFF);
-	const uint8_t high = Read((arg + m_Regs.X + 1) & 0xFF);
+	const u8 arg = Read(m_Regs.PC + 1);
+	const u8 low = Read((arg + m_Regs.X) & 0xFF);
+	const u8 high = Read((arg + m_Regs.X + 1) & 0xFF);
 	return low | (high << 8);
 }
 
-uint16_t CPU::ResolveIndirectIndexed() const
+u16 CPU::ResolveIndirectIndexed() const
 {
-	const uint8_t arg = Read(m_Regs.PC + 1);
-	const uint8_t low = Read(arg);
-	const uint8_t high = Read((arg + 1) & 0xFF);
-	const uint16_t baseAddr = low | (high << 8);
+	const u8 arg = Read(m_Regs.PC + 1);
+	const u8 low = Read(arg);
+	const u8 high = Read((arg + 1) & 0xFF);
+	const u16 baseAddr = low | (high << 8);
 	return baseAddr + m_Regs.Y;
 }
 
-uint8_t CPU::ADC(AddrMode addrMode) 
+u8 CPU::ADC(AddrMode addrMode) 
 {
-	const uint8_t val = Read(ResolveAddress(addrMode));
-	const uint16_t result = m_Regs.A + val + m_StatusReg.Test(StatusFlag::Carry);
+	const u8 val = Read(ResolveAddress(addrMode));
+	const u16 result = m_Regs.A + val + m_StatusReg.Test(StatusFlag::Carry);
 
 	m_StatusReg.Set(StatusFlag::Carry, result > 0xFF);
 	m_StatusReg.Set(StatusFlag::Zero, (result & 0xFF) == 0);
@@ -619,9 +624,9 @@ uint8_t CPU::ADC(AddrMode addrMode)
 	return AddsCycle(addrMode);
 }
 
-uint8_t CPU::AND(AddrMode addrMode)
+u8 CPU::AND(AddrMode addrMode)
 {
-	const uint8_t val = Read(ResolveAddress(addrMode));
+	const u8 val = Read(ResolveAddress(addrMode));
 	m_Regs.A &= val;
 	m_StatusReg.Set(StatusFlag::Zero, m_Regs.A == 0);
 	m_StatusReg.Set(StatusFlag::Negative, m_Regs.A & 0x80);
@@ -629,7 +634,7 @@ uint8_t CPU::AND(AddrMode addrMode)
 	return AddsCycle(addrMode);
 }
 
-uint8_t CPU::ASL(AddrMode addrMode)
+u8 CPU::ASL(AddrMode addrMode)
 {
 	if (addrMode == AddrMode::Accumulator)
 	{
@@ -640,8 +645,8 @@ uint8_t CPU::ASL(AddrMode addrMode)
 	}
 	else
 	{
-		const uint16_t addr = ResolveAddress(addrMode);
-		uint8_t val = Read(addr);
+		const u16 addr = ResolveAddress(addrMode);
+		u8 val = Read(addr);
 		Write(addr, val);
 		m_StatusReg.Set(StatusFlag::Carry, val & 0x80);
 		val <<= 1;
@@ -652,59 +657,59 @@ uint8_t CPU::ASL(AddrMode addrMode)
 	return 0;
 }
 
-uint8_t CPU::BCC(AddrMode addrMode)
+u8 CPU::BCC(AddrMode addrMode)
 {
 	if (!m_StatusReg.Test(StatusFlag::Carry))
 		return Branch(ResolveAddress(addrMode));
 	return 0;
 }
 
-uint8_t CPU::BCS(AddrMode addrMode)
+u8 CPU::BCS(AddrMode addrMode)
 { 
 	if (m_StatusReg.Test(StatusFlag::Carry))
 		return Branch(ResolveAddress(addrMode));
 	return 0;
 }
 
-uint8_t CPU::BEQ(AddrMode addrMode)
+u8 CPU::BEQ(AddrMode addrMode)
 {
 	if (m_StatusReg.Test(StatusFlag::Zero))
 		return Branch(ResolveAddress(addrMode));
 	return 0;
 }
 
-uint8_t CPU::BIT(AddrMode addrMode)
+u8 CPU::BIT(AddrMode addrMode)
 {
-	const uint8_t val = Read(ResolveAddress(addrMode));
-	const uint8_t result = m_Regs.A & val;
+	const u8 val = Read(ResolveAddress(addrMode));
+	const u8 result = m_Regs.A & val;
 	m_StatusReg.Set(StatusFlag::Zero, result == 0);
 	m_StatusReg.Set(StatusFlag::Overflow, val & 0x40);
 	m_StatusReg.Set(StatusFlag::Negative, val & 0x80);
 	return 0;
 }
 
-uint8_t CPU::BMI(AddrMode addrMode)
+u8 CPU::BMI(AddrMode addrMode)
 {
 	if (m_StatusReg.Test(StatusFlag::Negative))
 		return Branch(ResolveAddress(addrMode));
 	return 0;
 }
 
-uint8_t CPU::BNE(AddrMode addrMode)
+u8 CPU::BNE(AddrMode addrMode)
 {
 	if (!m_StatusReg.Test(StatusFlag::Zero))
 		return Branch(ResolveAddress(addrMode));
 	return 0;
 }
 
-uint8_t CPU::BPL(AddrMode addrMode)
+u8 CPU::BPL(AddrMode addrMode)
 {
 	if (!m_StatusReg.Test(StatusFlag::Negative))
 		return Branch(ResolveAddress(addrMode));
 	return 0;
 }
 
-uint8_t CPU::BRK(AddrMode addrMode)
+u8 CPU::BRK(AddrMode addrMode)
 {
 	PushStackWord(m_Regs.PC + 2);
 	PushStack((m_StatusReg | StatusFlag::Break).GetRaw());
@@ -715,76 +720,76 @@ uint8_t CPU::BRK(AddrMode addrMode)
 	return 0;
 }
 
-uint8_t CPU::BVC(AddrMode addrMode)
+u8 CPU::BVC(AddrMode addrMode)
 {
 	if (!m_StatusReg.Test(StatusFlag::Overflow))
 		return Branch(ResolveAddress(addrMode));
 	return 0;
 }
 
-uint8_t CPU::BVS(AddrMode addrMode)
+u8 CPU::BVS(AddrMode addrMode)
 {
 	if (m_StatusReg.Test(StatusFlag::Overflow))
 		return Branch(ResolveAddress(addrMode));
 	return 0;
 }
 
-uint8_t CPU::CLC(AddrMode addrMode)
+u8 CPU::CLC(AddrMode addrMode)
 {
 	m_StatusReg.Clear(StatusFlag::Carry);
 	return 0;
 }
 
-uint8_t CPU::CLD(AddrMode addrMode)
+u8 CPU::CLD(AddrMode addrMode)
 {
 	m_StatusReg.Clear(StatusFlag::Decimal);
 	return 0;
 }
 
-uint8_t CPU::CLI(AddrMode addrMode)
+u8 CPU::CLI(AddrMode addrMode)
 {
 	m_StatusReg.Set(StatusFlag::InterruptDisable, false);
 	//m_InterruptDisableDelay = INTERRUPT_DISABLE_DELAY_OFF;
 	return 0;
 }
 
-uint8_t CPU::CLV(AddrMode addrMode)
+u8 CPU::CLV(AddrMode addrMode)
 {
 	m_StatusReg.Clear(StatusFlag::Overflow);
 	return 0;
 }
 
-uint8_t CPU::CMP(AddrMode addrMode)
+u8 CPU::CMP(AddrMode addrMode)
 {
-	const uint8_t val = Read(ResolveAddress(addrMode));
+	const u8 val = Read(ResolveAddress(addrMode));
 	m_StatusReg.Set(StatusFlag::Carry, m_Regs.A >= val);
 	m_StatusReg.Set(StatusFlag::Zero, m_Regs.A == val);
 	m_StatusReg.Set(StatusFlag::Negative, (m_Regs.A - val) & 0x80);
 	return AddsCycle(addrMode);
 }
 
-uint8_t CPU::CPX(AddrMode addrMode)
+u8 CPU::CPX(AddrMode addrMode)
 {
-	const uint8_t val = Read(ResolveAddress(addrMode));
+	const u8 val = Read(ResolveAddress(addrMode));
 	m_StatusReg.Set(StatusFlag::Carry, m_Regs.X >= val);
 	m_StatusReg.Set(StatusFlag::Zero, m_Regs.X == val);
 	m_StatusReg.Set(StatusFlag::Negative, (m_Regs.X - val) & 0x80);
 	return 0;
 }
 
-uint8_t CPU::CPY(AddrMode addrMode)
+u8 CPU::CPY(AddrMode addrMode)
 {
-	const uint8_t val = Read(ResolveAddress(addrMode));
+	const u8 val = Read(ResolveAddress(addrMode));
 	m_StatusReg.Set(StatusFlag::Carry, m_Regs.Y >= val);
 	m_StatusReg.Set(StatusFlag::Zero, m_Regs.Y == val);
 	m_StatusReg.Set(StatusFlag::Negative, (m_Regs.Y - val) & 0x80);
 	return 0;
 }
 
-uint8_t CPU::DEC(AddrMode addrMode)
+u8 CPU::DEC(AddrMode addrMode)
 {
-	const uint16_t addr = ResolveAddress(addrMode);
-	uint8_t val = Read(addr);
+	const u16 addr = ResolveAddress(addrMode);
+	u8 val = Read(addr);
 	Write(addr, val);
 	val -= 1;
 	m_StatusReg.Set(StatusFlag::Zero, val == 0);
@@ -793,7 +798,7 @@ uint8_t CPU::DEC(AddrMode addrMode)
 	return 0;
 }
 
-uint8_t CPU::DEX(AddrMode addrMode)
+u8 CPU::DEX(AddrMode addrMode)
 {
 	m_Regs.X--;
 	m_StatusReg.Set(StatusFlag::Zero, m_Regs.X == 0);
@@ -801,7 +806,7 @@ uint8_t CPU::DEX(AddrMode addrMode)
 	return 0;
 }
 
-uint8_t CPU::DEY(AddrMode addrMode)
+u8 CPU::DEY(AddrMode addrMode)
 {
 	m_Regs.Y--;
 	m_StatusReg.Set(StatusFlag::Zero, m_Regs.Y == 0);
@@ -809,19 +814,19 @@ uint8_t CPU::DEY(AddrMode addrMode)
 	return 0;
 }
 
-uint8_t CPU::EOR(AddrMode addrMode)
+u8 CPU::EOR(AddrMode addrMode)
 {
-	const uint8_t val = Read(ResolveAddress(addrMode));
+	const u8 val = Read(ResolveAddress(addrMode));
 	m_Regs.A ^= val;
 	m_StatusReg.Set(StatusFlag::Zero, m_Regs.A == 0);
 	m_StatusReg.Set(StatusFlag::Negative, m_Regs.A & 0x80);
 	return AddsCycle(addrMode);
 }
 
-uint8_t CPU::INC(AddrMode addrMode)
+u8 CPU::INC(AddrMode addrMode)
 {
-	const uint16_t addr = ResolveAddress(addrMode);
-	uint8_t val = Read(addr);
+	const u16 addr = ResolveAddress(addrMode);
+	u8 val = Read(addr);
 	Write(addr, val);
 	val++;
 	m_StatusReg.Set(StatusFlag::Zero, val == 0);
@@ -830,7 +835,7 @@ uint8_t CPU::INC(AddrMode addrMode)
 	return 0;
 }
 
-uint8_t CPU::INX(AddrMode addrMode)
+u8 CPU::INX(AddrMode addrMode)
 {
 	m_Regs.X++;
 	m_StatusReg.Set(StatusFlag::Zero, m_Regs.X == 0);
@@ -838,7 +843,7 @@ uint8_t CPU::INX(AddrMode addrMode)
 	return 0;
 }
 
-uint8_t CPU::INY(AddrMode addrMode)
+u8 CPU::INY(AddrMode addrMode)
 {
 	m_Regs.Y++;
 	m_StatusReg.Set(StatusFlag::Zero, m_Regs.Y == 0);
@@ -846,14 +851,14 @@ uint8_t CPU::INY(AddrMode addrMode)
 	return 0;
 }
 
-uint8_t CPU::JMP(AddrMode addrMode)
+u8 CPU::JMP(AddrMode addrMode)
 {
 	m_Regs.PC = ResolveAddress(addrMode);
 	m_PCManuallySet = true;
 	return 0;
 }
 
-uint8_t CPU::JSR(AddrMode addrMode)
+u8 CPU::JSR(AddrMode addrMode)
 {
 	PushStackWord(m_Regs.PC + 2);
 	m_Regs.PC = ResolveAddress(addrMode);
@@ -861,7 +866,7 @@ uint8_t CPU::JSR(AddrMode addrMode)
 	return 0;
 }
 
-uint8_t CPU::LDA(AddrMode addrMode)
+u8 CPU::LDA(AddrMode addrMode)
 {
 	m_Regs.A = Read(ResolveAddress(addrMode));
 	m_StatusReg.Set(StatusFlag::Zero, m_Regs.A == 0);
@@ -869,7 +874,7 @@ uint8_t CPU::LDA(AddrMode addrMode)
 	return AddsCycle(addrMode);
 }
 
-uint8_t CPU::LDX(AddrMode addrMode)
+u8 CPU::LDX(AddrMode addrMode)
 {
 	m_Regs.X = Read(ResolveAddress(addrMode));
 	m_StatusReg.Set(StatusFlag::Zero, m_Regs.X == 0);
@@ -877,7 +882,7 @@ uint8_t CPU::LDX(AddrMode addrMode)
 	return AddsCycle(addrMode);
 }
 
-uint8_t CPU::LDY(AddrMode addrMode)
+u8 CPU::LDY(AddrMode addrMode)
 {
 	m_Regs.Y = Read(ResolveAddress(addrMode));
 	m_StatusReg.Set(StatusFlag::Zero, m_Regs.Y == 0);
@@ -885,7 +890,7 @@ uint8_t CPU::LDY(AddrMode addrMode)
 	return AddsCycle(addrMode);
 }
 
-uint8_t CPU::LSR(AddrMode addrMode)
+u8 CPU::LSR(AddrMode addrMode)
 {
 	if (addrMode == AddrMode::Accumulator)
 	{
@@ -896,8 +901,8 @@ uint8_t CPU::LSR(AddrMode addrMode)
 	}
 	else
 	{
-		const uint16_t addr = ResolveAddress(addrMode);
-		uint8_t val = Read(addr);
+		const u16 addr = ResolveAddress(addrMode);
+		u8 val = Read(addr);
 		Write(addr, val);
 		m_StatusReg.Set(StatusFlag::Carry, val & 0x1);
 		val >>= 1;
@@ -908,33 +913,33 @@ uint8_t CPU::LSR(AddrMode addrMode)
 	return 0;
 }
 
-uint8_t CPU::NOP(AddrMode addrMode)
+u8 CPU::NOP(AddrMode addrMode)
 {
 	return 0;
 }
 
-uint8_t CPU::ORA(AddrMode addrMode)
+u8 CPU::ORA(AddrMode addrMode)
 {
-	const uint8_t val = Read(ResolveAddress(addrMode));
+	const u8 val = Read(ResolveAddress(addrMode));
 	m_Regs.A |= val;
 	m_StatusReg.Set(StatusFlag::Zero, m_Regs.A == 0);
 	m_StatusReg.Set(StatusFlag::Negative, m_Regs.A & 0x80);
 	return AddsCycle(addrMode);
 }
 
-uint8_t CPU::PHA(AddrMode addrMode)
+u8 CPU::PHA(AddrMode addrMode)
 {
 	PushStack(m_Regs.A);
 	return 0;
 }
 
-uint8_t CPU::PHP(AddrMode addrMode)
+u8 CPU::PHP(AddrMode addrMode)
 {
 	PushStack((m_StatusReg | StatusFlag::Break).GetRaw());
 	return 0;
 }
 
-uint8_t CPU::PLA(AddrMode addrMode)
+u8 CPU::PLA(AddrMode addrMode)
 {
 	m_Regs.A = PopStack();
 	m_StatusReg.Set(StatusFlag::Zero, m_Regs.A == 0);
@@ -942,7 +947,7 @@ uint8_t CPU::PLA(AddrMode addrMode)
 	return 0;
 }
 
-uint8_t CPU::PLP(AddrMode addrMode)
+u8 CPU::PLP(AddrMode addrMode)
 {
 	const StatusRegister flags{ PopStack() };
 	//const bool interruptDisable = flags & StatusFlag::InterruptDisable;
@@ -957,11 +962,11 @@ uint8_t CPU::PLP(AddrMode addrMode)
 	return 0;
 }
 
-uint8_t CPU::ROL(AddrMode addrMode)
+u8 CPU::ROL(AddrMode addrMode)
 {
-	const uint16_t addr = ResolveAddress(addrMode);
-	const uint8_t val = (addrMode == AddrMode::Accumulator) ? m_Regs.A : Read(addr);
-	const uint8_t res = (val << 1) | (m_StatusReg.Test(StatusFlag::Carry) ? 1 : 0);
+	const u16 addr = ResolveAddress(addrMode);
+	const u8 val = (addrMode == AddrMode::Accumulator) ? m_Regs.A : Read(addr);
+	const u8 res = (val << 1) | (m_StatusReg.Test(StatusFlag::Carry) ? 1 : 0);
 	m_StatusReg.Set(StatusFlag::Carry, val & 0x80);
 	m_StatusReg.Set(StatusFlag::Zero, res == 0);
 	m_StatusReg.Set(StatusFlag::Negative, res & 0x80);
@@ -978,11 +983,11 @@ uint8_t CPU::ROL(AddrMode addrMode)
 	return 0;
 }
 
-uint8_t CPU::ROR(AddrMode addrMode)
+u8 CPU::ROR(AddrMode addrMode)
 {
-	const uint16_t addr = ResolveAddress(addrMode);
-	const uint8_t val = (addrMode == AddrMode::Accumulator) ? m_Regs.A : Read(addr);
-	const uint8_t res = (val >> 1) | (m_StatusReg.Test(StatusFlag::Carry) << 7);
+	const u16 addr = ResolveAddress(addrMode);
+	const u8 val = (addrMode == AddrMode::Accumulator) ? m_Regs.A : Read(addr);
+	const u8 res = (val >> 1) | (m_StatusReg.Test(StatusFlag::Carry) << 7);
 	m_StatusReg.Set(StatusFlag::Carry, val & 0x1);
 	m_StatusReg.Set(StatusFlag::Zero, res == 0);
 	m_StatusReg.Set(StatusFlag::Negative, res & 0x80);
@@ -1000,7 +1005,7 @@ uint8_t CPU::ROR(AddrMode addrMode)
 	return 0;
 }
 
-uint8_t CPU::RTI(AddrMode addrMode)
+u8 CPU::RTI(AddrMode addrMode)
 {
 	const StatusRegister flags{ PopStack() };
 	m_StatusReg
@@ -1016,17 +1021,17 @@ uint8_t CPU::RTI(AddrMode addrMode)
 	return 0;
 }
 
-uint8_t CPU::RTS(AddrMode addrMode)
+u8 CPU::RTS(AddrMode addrMode)
 {
 	m_Regs.PC = PopStackWord() + 1;
 	m_PCManuallySet = true;
 	return 0;
 }
 
-uint8_t CPU::SBC(AddrMode addrMode)
+u8 CPU::SBC(AddrMode addrMode)
 {
-	const uint8_t val = ~Read(ResolveAddress(addrMode));
-	const uint16_t result = m_Regs.A + val + m_StatusReg.Test(StatusFlag::Carry);
+	const u8 val = ~Read(ResolveAddress(addrMode));
+	const u16 result = m_Regs.A + val + m_StatusReg.Test(StatusFlag::Carry);
 
 	m_StatusReg.Set(StatusFlag::Carry, result > 0xFF);
 	m_StatusReg.Set(StatusFlag::Zero, (result & 0xFF) == 0);
@@ -1038,44 +1043,44 @@ uint8_t CPU::SBC(AddrMode addrMode)
 	return AddsCycle(addrMode);
 }
 
-uint8_t CPU::SEC(AddrMode addrMode)
+u8 CPU::SEC(AddrMode addrMode)
 {
 	m_StatusReg.Set(StatusFlag::Carry);
 	return 0;
 }
 
-uint8_t CPU::SED(AddrMode addrMode)
+u8 CPU::SED(AddrMode addrMode)
 {
 	m_StatusReg.Set(StatusFlag::Decimal);
 	return 0;
 }
 
-uint8_t CPU::SEI(AddrMode addrMode)
+u8 CPU::SEI(AddrMode addrMode)
 {
 	m_StatusReg.Set(StatusFlag::InterruptDisable);
 	//m_InterruptDisableDelay = INTERRUPT_DISABLE_DELAY_ON;
 	return 0;
 }
 
-uint8_t CPU::STA(AddrMode addrMode)
+u8 CPU::STA(AddrMode addrMode)
 {
 	Write(ResolveAddress(addrMode), m_Regs.A);
 	return 0;
 }
 
-uint8_t CPU::STX(AddrMode addrMode)
+u8 CPU::STX(AddrMode addrMode)
 {
 	Write(ResolveAddress(addrMode), m_Regs.X);
 	return 0;
 }
 
-uint8_t CPU::STY(AddrMode addrMode)
+u8 CPU::STY(AddrMode addrMode)
 {
 	Write(ResolveAddress(addrMode), m_Regs.Y);
 	return 0;
 }
 
-uint8_t CPU::TAX(AddrMode addrMode)
+u8 CPU::TAX(AddrMode addrMode)
 {
 	m_Regs.X = m_Regs.A;
 	m_StatusReg.Set(StatusFlag::Zero, m_Regs.X == 0);
@@ -1083,7 +1088,7 @@ uint8_t CPU::TAX(AddrMode addrMode)
 	return 0;
 }
 
-uint8_t CPU::TAY(AddrMode addrMode)
+u8 CPU::TAY(AddrMode addrMode)
 {
 	m_Regs.Y = m_Regs.A;
 	m_StatusReg.Set(StatusFlag::Zero, m_Regs.Y == 0);
@@ -1091,7 +1096,7 @@ uint8_t CPU::TAY(AddrMode addrMode)
 	return 0;
 }
 
-uint8_t CPU::TSX(AddrMode addrMode)
+u8 CPU::TSX(AddrMode addrMode)
 {
 	m_Regs.X = m_Regs.S;
 	m_StatusReg.Set(StatusFlag::Zero, m_Regs.X == 0);
@@ -1099,7 +1104,7 @@ uint8_t CPU::TSX(AddrMode addrMode)
 	return 0;
 }
 
-uint8_t CPU::TXA(AddrMode addrMode)
+u8 CPU::TXA(AddrMode addrMode)
 {
 	m_Regs.A = m_Regs.X;
 	m_StatusReg.Set(StatusFlag::Zero, m_Regs.A == 0);
@@ -1107,13 +1112,13 @@ uint8_t CPU::TXA(AddrMode addrMode)
 	return 0;
 }
 
-uint8_t CPU::TXS(AddrMode addrMode)
+u8 CPU::TXS(AddrMode addrMode)
 {
 	m_Regs.S = m_Regs.X;
 	return 0;
 }
 
-uint8_t CPU::TYA(AddrMode addrMode)
+u8 CPU::TYA(AddrMode addrMode)
 {
 	m_Regs.A = m_Regs.Y;
 	m_StatusReg.Set(StatusFlag::Zero, m_Regs.A == 0);

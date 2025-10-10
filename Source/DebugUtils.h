@@ -1,17 +1,16 @@
 #pragma once
 
+#include "Common.h"
 #include <array>
-#include <span>
-#include <string>
 
 enum class AddrMode;
 enum class InstrType;
 
 namespace DebugUtils
 {
-	std::array<char, 2> ByteToChars(uint8_t byte);
+	std::array<char, 2> ByteToChars(u8 byte);
 
 	const char* InstrTypeToStr(InstrType instrType);
 
-	void AddrModeToStr(AddrMode mode, uint16_t operand, uint16_t effectiveAddr, uint8_t val, char* buf, size_t bufLen);
+	void AddrModeToStr(AddrMode mode, u16 operand, u16 effectiveAddr, u8 val, char* buf, usize bufLen);
 }

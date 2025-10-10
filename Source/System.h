@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Common.h"
 #include "CPU.h"
 #include "Bus.h"
 #include "CPU.h"
@@ -8,7 +9,7 @@
 #include <array>
 #include <filesystem>
 
-using RAM = std::array<uint8_t, 0x800>;
+using RAM = std::array<u8, 0x800>;
 
 class System
 {
