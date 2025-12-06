@@ -43,7 +43,7 @@ u8 Cartridge::ReadROM(u16 addr) const
 	return m_ROM[addr];
 }
 
-u8 Cartridge::ReadRAM(u16 addr) const
+u8 Cartridge::ReadSRAM(u16 addr) const
 {
-	return m_RAM[addr];
+	return m_SRAM[addr];
 }

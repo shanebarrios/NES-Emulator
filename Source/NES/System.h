@@ -2,8 +2,7 @@
 
 #include "Common.h"
 #include "CPU.h"
-#include "Bus.h"
-#include "CPU.h"
+#include "CPUBus.h"
 #include "Cartridge.h"
 
 #include <array>
@@ -26,5 +25,5 @@ private:
 	CPU m_CPU{};
 	RAM m_RAM{};
 	Cartridge m_Cartridge{};
-	Bus m_Bus{};
+	CPUBus m_Bus{};
 };

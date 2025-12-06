@@ -5,11 +5,11 @@
 class CPU;
 class Cartridge;
 
-class Bus
+class CPUBus
 {
 public:
-	Bus() = default;
-	Bus(CPU* _cpu, Cartridge* cartridge, uint8_t* ram) :
+	CPUBus() = default;
+	CPUBus(CPU* _cpu, Cartridge* cartridge, uint8_t* ram) :
 		m_CPU{ _cpu }, m_Cartridge{ cartridge }, m_RAM{ ram } {}
 
 	void Attach(CPU* _cpu, Cartridge* cartridge, uint8_t* ram);

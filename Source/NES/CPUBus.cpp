@@ -1,4 +1,4 @@
-#include "Bus.h"
+#include "CPUBus.h"
 
 #include <fstream>
 #include <cstring>
@@ -7,14 +7,14 @@
 #include "CPU.h"
 #include "Cartridge.h"
 
-void Bus::Attach(CPU* _cpu, Cartridge* cartridge, u8* ram)
+void CPUBus::Attach(CPU* _cpu, Cartridge* cartridge, u8* ram)
 {
 	m_CPU = _cpu;
 	m_Cartridge = cartridge;
 	m_RAM = ram;
 }
 
-u8 Bus::Read(u16 addr) const
+u8 CPUBus::Read(u16 addr) const
 {
 	if (addr < 0x2000)
 	{
@@ -34,7 +34,7 @@ u8 Bus::Read(u16 addr) const
 	}
 	else if (addr < 0x8000)
 	{
-		return m_Cartridge->ReadRAM(addr % 0x2000);
+		return m_Cartridge->ReadSRAM(addr % 0x2000);
 	}
 	else
 	{
@@ -44,7 +44,7 @@ u8 Bus::Read(u16 addr) const
 	return 0;
 }
 
-void Bus::Write(u16 addr, u8 val)
+void CPUBus::Write(u16 addr, u8 val)
 {
 	if (addr < 0x2000)
 	{

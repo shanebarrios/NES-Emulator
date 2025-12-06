@@ -42,7 +42,6 @@ void PollEvents()
 
 int Main()
 {
-	assert(false);
 	auto system = std::make_unique<System>();
 	const WindowSpec windowSpec
 	{

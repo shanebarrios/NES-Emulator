@@ -1,6 +1,6 @@
 #include "CPU.h"
 
-#include "Bus.h"
+#include "CPUBus.h"
 #include "Common.h"
 #include "DebugUtils.h"
 #include <stdio.h>
@@ -225,7 +225,7 @@ const std::array<Instruction, 256> CPU::s_OpcodeLookup = [] {
 	return lookup;
 }();
 
-void CPU::Init(Bus* bus)
+void CPU::Init(CPUBus* bus)
 {
 	m_Bus = bus;
 	m_Regs.A = 0;

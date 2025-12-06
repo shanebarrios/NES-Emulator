@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <cstdint>
+#include <array>
 
 #define ASSERT(cond) \
 	do { \
@@ -32,3 +33,12 @@ using i64 = int64_t;
 
 using usize = size_t;
 using isize = ptrdiff_t;
+
+template <typename T, size_t N>
+using Array = std::array<T, N>;
+
+template <typename T, size_t M, size_t N>
+using Array2D = std::array<std::array<T, N>, M>;
+
+template <size_t N>
+using Memory = Array<u8, N>;

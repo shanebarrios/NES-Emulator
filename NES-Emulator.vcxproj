@@ -28,22 +28,22 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -122,23 +122,25 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="source\Bus.cpp" />
-    <ClCompile Include="source\Cartridge.cpp" />
-    <ClCompile Include="source\CPU.cpp" />
-    <ClCompile Include="source\DebugUtils.cpp" />
-    <ClCompile Include="source\Main.cpp" />
-    <ClCompile Include="source\System.cpp" />
-    <ClCompile Include="Source\Window.cpp" />
+    <ClCompile Include="Source\NES\CPUBus.cpp" />
+    <ClCompile Include="Source\NES\Cartridge.cpp" />
+    <ClCompile Include="Source\NES\CPU.cpp" />
+    <ClCompile Include="Source\NES\DebugUtils.cpp" />
+    <ClCompile Include="Source\NES\Main.cpp" />
+    <ClCompile Include="Source\NES\PPU.cpp" />
+    <ClCompile Include="Source\NES\System.cpp" />
+    <ClCompile Include="Source\NES\Window.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="source\Bus.h" />
-    <ClInclude Include="source\Cartridge.h" />
-    <ClInclude Include="source\Common.h" />
-    <ClInclude Include="source\CPU.h" />
-    <ClInclude Include="source\DebugUtils.h" />
-    <ClInclude Include="source\System.h" />
-    <ClInclude Include="Source\Window.h" />
-    <ClInclude Include="Source\WindowsCommon.h" />
+    <ClInclude Include="Source\NES\CPUBus.h" />
+    <ClInclude Include="Source\NES\Cartridge.h" />
+    <ClInclude Include="Source\NES\Common.h" />
+    <ClInclude Include="Source\NES\CPU.h" />
+    <ClInclude Include="Source\NES\DebugUtils.h" />
+    <ClInclude Include="Source\NES\PPU.h" />
+    <ClInclude Include="Source\NES\System.h" />
+    <ClInclude Include="Source\NES\Window.h" />
+    <ClInclude Include="Source\NES\WindowsCommon.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

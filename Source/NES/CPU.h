@@ -3,7 +3,7 @@
 #include "Common.h"
 #include <array>
 
-class Bus;
+class CPUBus;
 
 enum class StatusFlag : u8
 {
@@ -106,7 +106,7 @@ class CPU
 public:
 	CPU() = default;
 
-	void Init(Bus* bus);
+	void Init(CPUBus* bus);
 
 	void Reset();
 
@@ -177,7 +177,7 @@ private:
 	u8 TSX(AddrMode); u8 TXA(AddrMode); u8 TXS(AddrMode); u8 TYA(AddrMode);
 
 private:
-	Bus* m_Bus = nullptr;
+	CPUBus* m_Bus = nullptr;
 
 	StatusRegister m_StatusReg{};
 	
