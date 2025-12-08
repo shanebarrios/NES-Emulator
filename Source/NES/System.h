@@ -1,10 +1,11 @@
 #pragma once
 
-#include "Common.h"
+#include "../Core/Common.h"
 #include "CPU.h"
 #include "CPUBus.h"
 #include "Cartridge.h"
 #include "MMC.h"
+#include "PPU.h"
 
 #include <filesystem>
 #include <memory>
@@ -24,7 +25,8 @@ public:
 private:
 	std::unique_ptr<CPU> m_Cpu = nullptr;
 	std::unique_ptr<Cartridge> m_Cartridge = nullptr;
-	std::unique_ptr<MMC> m_Mmc = nullptr;
+	std::unique_ptr<Mapper> m_Mapper = nullptr;
+	std::unique_ptr<PPU> m_Ppu = nullptr;
 	std::unique_ptr<CPUBus> m_CpuBus = nullptr;
 	std::unique_ptr<u8[]> m_SystemRam = nullptr;
 };

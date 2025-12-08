@@ -1,7 +1,6 @@
 #include "CPU.h"
 
 #include "CPUBus.h"
-#include "Common.h"
 #include "DebugUtils.h"
 #include <stdio.h>
 #include <string.h>
@@ -12,8 +11,8 @@ static constexpr u16 NMI_VECTOR = 0xFFFA;
 static constexpr u16 RESET_VECTOR = 0xFFFC;
 static constexpr u16 IRQ_VECTOR = 0xFFFE;
 
-const std::array<Instruction, 256> CPU::s_OpcodeLookup = [] {
-	std::array<Instruction, 256> lookup{};
+const Array<Instruction, 256> CPU::s_OpcodeLookup = [] {
+	Array<Instruction, 256> lookup{};
 
 	lookup[0x69] = { InstrType::ADC, AddrMode::Immediate, 2, 2 };
 	lookup[0x65] = { InstrType::ADC, AddrMode::ZeroPage, 2, 3 };
@@ -225,8 +224,12 @@ const std::array<Instruction, 256> CPU::s_OpcodeLookup = [] {
 	return lookup;
 }();
 
-CPU::CPU(CPUBus* bus) :
-	m_Bus {bus}
+CPU::CPU() : CPU{nullptr}
+{
+
+}
+
+CPU::CPU(CPUBus* bus) : m_Bus{bus}
 {
 	m_Regs.A = 0;
 	m_Regs.X = 0;
@@ -246,15 +249,15 @@ void CPU::Reset()
 	m_Regs.PC = ReadWord(RESET_VECTOR);
 	m_Regs.S = 0xFD;
 	m_StatusReg.Set(StatusFlag::InterruptDisable);
-	m_DelayCycles = 7;
+	m_NextFetchCycle = 7;
 }
 
 void CPU::PerformCycle()
 {
-	if (m_DelayCycles > 0)
+	m_TotalCycles++;
+
+	if (m_TotalCycles < m_NextFetchCycle)
 	{
-		m_DelayCycles--;
-		m_TotalCycles++;
 		return;
 	}
 
@@ -337,7 +340,8 @@ void CPU::ExecuteInstruction()
 	const InstructionFunc f = ResolveInstructionFunction(m_CurrentInstruction.instrType);
 
 	const u8 addCycles = (this->*f)(m_CurrentInstruction.addrMode);
-	m_DelayCycles = addCycles + m_CurrentInstruction.cycleCount;
+
+	m_NextFetchCycle = m_TotalCycles + addCycles + m_CurrentInstruction.cycleCount;
 }
 
 u8 CPU::Read(u16 addr) const
@@ -473,7 +477,7 @@ void CPU::HandleInterrupt(InterruptType interruptType)
 		break;
 	}
 
-	m_DelayCycles = 7;
+	m_NextFetchCycle = m_TotalCycles + 7;
 }
 
 u16 CPU::ResolveAddress(AddrMode addrMode) const

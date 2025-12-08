@@ -27,19 +27,22 @@
     <ClCompile Include="Source\NES\DebugUtils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\NES\Main.cpp">
+    <ClCompile Include="Source\Main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source\NES\System.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\NES\Window.cpp">
+    <ClCompile Include="Source\Core\Window.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source\NES\PPU.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\NES\Mapper0.cpp">
+    <ClCompile Include="Source\NES\Mappers\NROM.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Logger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -48,9 +51,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\NES\Cartridge.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\NES\Common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\NES\CPU.h">
@@ -62,16 +62,22 @@
     <ClInclude Include="Source\NES\System.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\NES\Window.h">
+    <ClInclude Include="Source\Core\Window.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\NES\WindowsCommon.h">
+    <ClInclude Include="Source\Core\WindowsCommon.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\NES\PPU.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\NES\MMC.h">
+    <ClInclude Include="Source\NES\Mapper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\Logger.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\Common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,7 +1,6 @@
 #pragma once
 
-#include "Common.h"
-#include <array>
+#include "../Core/Common.h"
 
 class CPUBus;
 
@@ -111,7 +110,11 @@ private:
 class CPU
 {
 public:
+	CPU();
+
 	explicit CPU(CPUBus* bus);
+
+	void Attach(CPUBus* bus) { m_Bus = bus; }
 
 	void TriggerNMI();
 
@@ -122,7 +125,7 @@ public:
 	void PrintState() const;
 
 private:
-	static const std::array<Instruction, 256> s_OpcodeLookup;
+	static const Array<Instruction, 256> s_OpcodeLookup;
 
 private:
 	void ExecuteInstruction();
@@ -201,10 +204,9 @@ private:
 
 	Instruction m_CurrentInstruction{};
 
-	u8 m_DelayCycles = 0;
-
 	bool m_NmiPending = false;
 	bool m_IrqPending = false;
 
 	u64 m_TotalCycles = 0;
+	u64 m_NextFetchCycle = 0;
 };

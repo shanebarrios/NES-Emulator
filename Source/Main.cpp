@@ -1,15 +1,9 @@
-﻿#include "WindowsCommon.h"
+﻿#include "Core/WindowsCommon.h"
+#include "Core/Window.h"
+#include "Core/Logger.h"
+#include "NES/System.h"
 #include <memory>
-#include <ShObjIdl.h>
-#include <atlbase.h>
-#include <filesystem>
-#include "System.h"
 #include <stdio.h>
-#include <thread>
-#include <chrono>
-#include "Window.h"
-
-#include <cstdint>
 
 HINSTANCE g_hInstance = nullptr;
 
@@ -28,7 +22,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 	return Main();
 }
 
-void PollEvents()
+static void PollEvents()
 {
 	MSG msg;
 	while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE) > 0)
@@ -38,10 +32,16 @@ void PollEvents()
 	}
 }
 
-#include <cassert>
-
-int Main()
+static void GlobalInit()
 {
+	g_Logger.Init();
+	g_Logger.SetLogLevel(LogLevel::Verbose);
+}
+
+static int Main()
+{
+	GlobalInit();
+
 	System system{};
 	const WindowSpec windowSpec
 	{

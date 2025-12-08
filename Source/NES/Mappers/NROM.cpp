@@ -1,6 +1,6 @@
-#include "MMC.h"
+#include "../Mapper.h"
 
-u8 Mapper0::CpuRead(u16 addr)
+u8 NROM::CpuRead(u16 addr)
 {
 	if (addr < 0x6000)
 	{
@@ -26,7 +26,7 @@ u8 Mapper0::CpuRead(u16 addr)
 	return 0;
 }
 
-void Mapper0::CpuWrite(u16 addr, u8 data)
+void NROM::CpuWrite(u16 addr, u8 data)
 {
 	// Only writes to RAM are allowed
 	if (addr >= 0x6000 && addr < 0x8000)
@@ -35,7 +35,7 @@ void Mapper0::CpuWrite(u16 addr, u8 data)
 	}
 }
 
-u8 Mapper0::PpuRead(u16 addr)
+u8 NROM::PpuRead(u16 addr)
 {
 	if (addr < 0x2000)
 	{

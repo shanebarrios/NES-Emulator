@@ -1,16 +1,18 @@
 #pragma once
 
-#include "Common.h"
+#include "../Core/Common.h"
 #include "Cartridge.h"
 
-class MMC
+class Mapper
 {
 public:
-	MMC(Cartridge* cartridge) { m_Cartridge = cartridge; }
+	Mapper() = default;
 
-	void AttachCartridge(Cartridge* cartridge) { m_Cartridge = cartridge; }
+	Mapper(Cartridge* cartridge) : m_Cartridge{ cartridge } {}
 
-	virtual ~MMC() = default;
+	void Attach(Cartridge* cartridge) { m_Cartridge = cartridge; }
+
+	virtual ~Mapper() = default;
 
 	virtual u8 CpuRead(u16 addr) = 0;
 
@@ -21,13 +23,15 @@ public:
 	virtual MirrorMode GetMirrorMode() const { return m_Cartridge->GetMirrorMode(); }
 
 protected:
-	Cartridge* m_Cartridge;
+	Cartridge* m_Cartridge = nullptr;
 };
 
-class Mapper0 : public MMC
+class NROM : public Mapper
 {
 public:
-	Mapper0(Cartridge* cartridge) : MMC{ cartridge } {}
+	NROM() : Mapper{} {}
+
+	NROM(Cartridge* cartridge) : Mapper{ cartridge } {}
 
 	u8 CpuRead(u16 addr) override;
 
