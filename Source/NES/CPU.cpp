@@ -6,11 +6,11 @@
 #include <stdio.h>
 #include <string.h>
 
-static constexpr u8 INTERRUPT_DISABLE_DELAY_NONE = 0x0;
-static constexpr u8 INTERRUPT_DISABLE_DELAY_OFF = 0x1;
-static constexpr u8 INTERRUPT_DISABLE_DELAY_ON = 0x3;
-
 static constexpr u16 STACK_BEGIN = 0x0100;
+
+static constexpr u16 NMI_VECTOR = 0xFFFA;
+static constexpr u16 RESET_VECTOR = 0xFFFC;
+static constexpr u16 IRQ_VECTOR = 0xFFFE;
 
 const std::array<Instruction, 256> CPU::s_OpcodeLookup = [] {
 	std::array<Instruction, 256> lookup{};
@@ -225,9 +225,9 @@ const std::array<Instruction, 256> CPU::s_OpcodeLookup = [] {
 	return lookup;
 }();
 
-void CPU::Init(CPUBus* bus)
+CPU::CPU(CPUBus* bus) :
+	m_Bus {bus}
 {
-	m_Bus = bus;
 	m_Regs.A = 0;
 	m_Regs.X = 0;
 	m_Regs.Y = 0;
@@ -236,27 +236,33 @@ void CPU::Init(CPUBus* bus)
 	m_StatusReg = StatusFlag::InterruptDisable | StatusFlag::Unused;
 }
 
+void CPU::TriggerNMI()
+{
+	m_NmiPending = true;
+}
+
 void CPU::Reset()
 {
-	m_Regs.PC = 0xC000;
+	m_Regs.PC = ReadWord(RESET_VECTOR);
 	m_Regs.S = 0xFD;
 	m_StatusReg.Set(StatusFlag::InterruptDisable);
-	m_InstructionRemainingCycles = 7;
+	m_DelayCycles = 7;
 }
 
 void CPU::PerformCycle()
 {
-	if (m_InstructionRemainingCycles > 0)
+	if (m_DelayCycles > 0)
 	{
-		m_InstructionRemainingCycles--;
+		m_DelayCycles--;
 		m_TotalCycles++;
 		return;
 	}
 
-	//if (m_InterruptDisableDelay != INTERRUPT_DISABLE_DELAY_NONE)
-	//{
-	//	m_StatusReg.Set(StatusFlag::InterruptDisable, m_InterruptDisableDelay == INTERRUPT_DISABLE_DELAY_ON);
-	//}
+	if (m_NmiPending)
+	{
+		HandleInterrupt(InterruptType::NMI);
+		return;
+	}
 
 	const u8 opCode = Read(m_Regs.PC);
 	
@@ -267,13 +273,13 @@ void CPU::PerformCycle()
 		m_CurrentInstruction = s_OpcodeLookup[0xEA];
 	}
 	PrintState();
+
+	const u16 oldPc = m_Regs.PC;
+
 	ExecuteInstruction();
 
-	if (!m_PCManuallySet)
+	if (m_Regs.PC == oldPc)
 		m_Regs.PC += m_CurrentInstruction.byteCount;
-
-	m_InterruptDisableDelay = INTERRUPT_DISABLE_DELAY_NONE;
-	m_PCManuallySet = false;
 }
 
 void CPU::PrintState() const
@@ -331,7 +337,7 @@ void CPU::ExecuteInstruction()
 	const InstructionFunc f = ResolveInstructionFunction(m_CurrentInstruction.instrType);
 
 	const u8 addCycles = (this->*f)(m_CurrentInstruction.addrMode);
-	m_InstructionRemainingCycles = addCycles + m_CurrentInstruction.cycleCount;
+	m_DelayCycles = addCycles + m_CurrentInstruction.cycleCount;
 }
 
 u8 CPU::Read(u16 addr) const
@@ -437,8 +443,37 @@ u8 CPU::Branch(u16 addr)
 	if ((updated & 0xFF00) != ((m_Regs.PC + m_CurrentInstruction.byteCount) & 0xFF00))
 		addCycles++;
 	m_Regs.PC = updated;
-	m_PCManuallySet = true;
+
 	return addCycles;
+}
+
+void CPU::HandleInterrupt(InterruptType interruptType)
+{
+	if (interruptType == InterruptType::IRQ && m_StatusReg.Test(StatusFlag::InterruptDisable))
+		return;
+
+	PushStackWord(m_Regs.PC);
+
+	u8 flags = m_StatusReg.GetRaw();
+	if (interruptType == InterruptType::BRK)
+		flags |= static_cast<u8>(StatusFlag::Break);
+
+	PushStack(flags);
+
+	m_StatusReg.Set(StatusFlag::InterruptDisable);
+
+	switch (interruptType)
+	{
+	case InterruptType::BRK:
+	case InterruptType::IRQ:
+		m_Regs.PC = ReadWord(IRQ_VECTOR);
+		break;
+	case InterruptType::NMI:
+		m_Regs.PC = ReadWord(NMI_VECTOR);
+		break;
+	}
+
+	m_DelayCycles = 7;
 }
 
 u16 CPU::ResolveAddress(AddrMode addrMode) const
@@ -711,12 +746,8 @@ u8 CPU::BPL(AddrMode addrMode)
 
 u8 CPU::BRK(AddrMode addrMode)
 {
-	PushStackWord(m_Regs.PC + 2);
-	PushStack((m_StatusReg | StatusFlag::Break).GetRaw());
-	
-	m_StatusReg.Set(StatusFlag::InterruptDisable);
-	m_Regs.PC = ReadWord(0xFFFE);
-	m_PCManuallySet = true;
+	m_Regs.PC += 2;
+	HandleInterrupt(InterruptType::BRK);
 	return 0;
 }
 
@@ -854,7 +885,6 @@ u8 CPU::INY(AddrMode addrMode)
 u8 CPU::JMP(AddrMode addrMode)
 {
 	m_Regs.PC = ResolveAddress(addrMode);
-	m_PCManuallySet = true;
 	return 0;
 }
 
@@ -862,7 +892,6 @@ u8 CPU::JSR(AddrMode addrMode)
 {
 	PushStackWord(m_Regs.PC + 2);
 	m_Regs.PC = ResolveAddress(addrMode);
-	m_PCManuallySet = true;
 	return 0;
 }
 
@@ -1017,14 +1046,12 @@ u8 CPU::RTI(AddrMode addrMode)
 		.Set(StatusFlag::Negative, flags & StatusFlag::Negative);
 
 	m_Regs.PC = PopStackWord();
-	m_PCManuallySet = true;
 	return 0;
 }
 
 u8 CPU::RTS(AddrMode addrMode)
 {
 	m_Regs.PC = PopStackWord() + 1;
-	m_PCManuallySet = true;
 	return 0;
 }
 

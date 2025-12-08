@@ -127,6 +127,7 @@
     <ClCompile Include="Source\NES\CPU.cpp" />
     <ClCompile Include="Source\NES\DebugUtils.cpp" />
     <ClCompile Include="Source\NES\Main.cpp" />
+    <ClCompile Include="Source\NES\Mapper0.cpp" />
     <ClCompile Include="Source\NES\PPU.cpp" />
     <ClCompile Include="Source\NES\System.cpp" />
     <ClCompile Include="Source\NES\Window.cpp" />
@@ -137,6 +138,7 @@
     <ClInclude Include="Source\NES\Common.h" />
     <ClInclude Include="Source\NES\CPU.h" />
     <ClInclude Include="Source\NES\DebugUtils.h" />
+    <ClInclude Include="Source\NES\MMC.h" />
     <ClInclude Include="Source\NES\PPU.h" />
     <ClInclude Include="Source\NES\System.h" />
     <ClInclude Include="Source\NES\Window.h" />

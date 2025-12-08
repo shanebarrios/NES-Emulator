@@ -44,6 +44,13 @@ enum class InstrType
 	RTS, SBC, SEC, SED, SEI, STA, STX, STY, TAX, TAY, TSX, TXA, TXS, TYA
 };
 
+enum class InterruptType
+{
+	NMI,
+	IRQ,
+	BRK
+};
+
 class CPU;
 
 typedef u8 (CPU::*InstructionFunc)(AddrMode);
@@ -104,9 +111,9 @@ private:
 class CPU
 {
 public:
-	CPU() = default;
+	explicit CPU(CPUBus* bus);
 
-	void Init(CPUBus* bus);
+	void TriggerNMI();
 
 	void Reset();
 
@@ -140,6 +147,8 @@ private:
 	bool AddsCycle(AddrMode addrMode) const;
 
 	u8 Branch(u16 addr);
+
+	void HandleInterrupt(InterruptType interruptType);
 
 	// ========== Address modes =========
 
@@ -192,10 +201,10 @@ private:
 
 	Instruction m_CurrentInstruction{};
 
-	u8 m_InstructionRemainingCycles = 0;
-	u8 m_InterruptDisableDelay = 0;
+	u8 m_DelayCycles = 0;
 
-	bool m_PCManuallySet = false;
+	bool m_NmiPending = false;
+	bool m_IrqPending = false;
 
 	u64 m_TotalCycles = 0;
 };

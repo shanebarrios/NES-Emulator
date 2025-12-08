@@ -42,7 +42,7 @@ void PollEvents()
 
 int Main()
 {
-	auto system = std::make_unique<System>();
+	System system{};
 	const WindowSpec windowSpec
 	{
 		.title = "NES Emulator",
@@ -71,15 +71,14 @@ int Main()
 		}
 	}
 
-	system->Init();
-	system->LoadROM("C:\\Users\\shane\\source\\repos\\NES-Emulator\\nestest.nes");
+	system.LoadROM("C:\\Users\\shane_xziqakl\\source\\repos\\NES-Emulator\\nestest.nes");
 
 	while (!window.ShouldQuit())
 	{
 		PollEvents();
 		//window.Present();
 
-		system->PerformCycle();
+		system.PerformCycle();
 
 		//std::this_thread::sleep_for(std::chrono::milliseconds(17));
 	}

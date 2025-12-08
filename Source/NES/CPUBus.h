@@ -2,23 +2,20 @@
 
 #include "Common.h"
 
-class CPU;
 class Cartridge;
+class MMC;
 
 class CPUBus
 {
 public:
-	CPUBus() = default;
-	CPUBus(CPU* _cpu, Cartridge* cartridge, uint8_t* ram) :
-		m_CPU{ _cpu }, m_Cartridge{ cartridge }, m_RAM{ ram } {}
+	CPUBus(MMC* mmc, u8* ram) :
+		m_Mmc{ mmc }, m_Ram{ ram } {}
 
-	void Attach(CPU* _cpu, Cartridge* cartridge, uint8_t* ram);
+	u8 Read(u16 addr);
 
-	uint8_t Read(uint16_t addr) const;
-	void Write(uint16_t addr, uint8_t val);
+	void Write(u16 addr, u8 val);
 
 private:
-	CPU* m_CPU = nullptr;
-	Cartridge* m_Cartridge = nullptr;
-	u8* m_RAM = nullptr;
+	MMC* m_Mmc;
+	u8* m_Ram;
 };
