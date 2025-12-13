@@ -4,6 +4,8 @@
 #include "NES/System.h"
 #include <memory>
 #include <stdio.h>
+#include <chrono>
+#include <thread>
 
 HINSTANCE g_hInstance = nullptr;
 
@@ -42,45 +44,50 @@ static int Main()
 {
 	GlobalInit();
 
-	System system{};
+	auto system = std::make_unique<System>();
 	const WindowSpec windowSpec
 	{
 		.title = "NES Emulator",
-		.width = 1920, .height = 1080,
+		.width = 1280, .height = 1200,
 		.renderWidth = 256, .renderHeight = 240
 	};
 	Window window{ windowSpec };
 
-	std::span<WindowPixel> framebuffer = window.GetFramebuffer();
-	for (isize i = 0; i < 240; i++)
-	{
-		const float u = static_cast<float>(i) / 240.0f;
-		const u8 r = static_cast<u8>(u * 0xFF);
-		for (isize j = 0; j < 256; j++)
-		{
-			const float v = static_cast<float>(j) / 256.0f;
-			const u8 g = static_cast<u8>(v * 0xFF);
-			const u8 b = 0xFF;
-			framebuffer[i * 256 + j] =
-			{
-				.b = b,
-				.g = g,
-				.r = r,
-				.a = 0xFF
-			};
-		}
-	}
+	system->LoadPalette("C:\\Users\\shane\\source\\repos\\NES-Emulator\\Assets\\Palettes\\2C02G_wiki.pal");
+	system->LoadROM("C:\\Users\\shane\\source\\repos\\NES-Emulator\\nestest.nes");
+	system->Reset();
 
-	system.LoadROM("C:\\Users\\shane_xziqakl\\source\\repos\\NES-Emulator\\nestest.nes");
+	using namespace std::chrono;
+	high_resolution_clock::time_point lastFrame = high_resolution_clock::now();
+	auto lastSecond = lastFrame;
+
+	double lag = 0.0;
+	u64 loops = 0;
 
 	while (!window.ShouldQuit())
 	{
-		PollEvents();
-		//window.Present();
+		const high_resolution_clock::time_point currentFrame = high_resolution_clock::now();
+		const double deltaTime = duration<double>(currentFrame - lastFrame).count();
+		lastFrame = currentFrame;
+		lag += deltaTime;
 
-		system.PerformCycle();
+		if (duration_cast<milliseconds>(currentFrame - lastSecond).count() > 1000)
+		{
+			LOG_INFO("Loops: %ld", loops);
+			loops = 0;
+			lastSecond += seconds(1);
+		}
 
-		//std::this_thread::sleep_for(std::chrono::milliseconds(17));
+		//PollEvents();
+
+		constexpr double delay = System::MASTER_CLOCK_PERIOD;
+		while (lag >= delay)
+		{
+			system->Update();
+			lag -= delay;
+		}
+		window.Present();
+		loops++;
 	}
 
 	return 0;

@@ -128,6 +128,7 @@
     <ClCompile Include="Source\NES\CPU.cpp" />
     <ClCompile Include="Source\NES\DebugUtils.cpp" />
     <ClCompile Include="Source\Main.cpp" />
+    <ClCompile Include="Source\NES\Mappers\Mapper.cpp" />
     <ClCompile Include="Source\NES\Mappers\NROM.cpp" />
     <ClCompile Include="Source\NES\PPU.cpp" />
     <ClCompile Include="Source\NES\System.cpp" />
@@ -145,6 +146,7 @@
     <ClInclude Include="Source\NES\System.h" />
     <ClInclude Include="Source\Core\Window.h" />
     <ClInclude Include="Source\Core\WindowsCommon.h" />
+    <ClInclude Include="Source\NES\SystemCommon.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

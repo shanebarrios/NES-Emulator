@@ -2,6 +2,7 @@
 
 #include "../Core/Common.h"
 #include "Cartridge.h"
+#include <optional>
 
 class Mapper
 {
@@ -19,6 +20,12 @@ public:
 	virtual void CpuWrite(u16 addr, u8 data) = 0;
 
 	virtual u8 PpuRead(u16 addr) = 0;
+
+	virtual void PpuWrite(u16 addr, u8 data) = 0;
+
+	// Takes in nametable offset, returns mirrored VRAM addr 
+	// or std::nullopt if mapper redirects to cartridge
+	virtual std::optional<u16> NametableMirror(u16 offset);
 
 	virtual MirrorMode GetMirrorMode() const { return m_Cartridge->GetMirrorMode(); }
 
@@ -38,4 +45,6 @@ public:
 	void CpuWrite(u16 addr, u8 data) override;
 
 	u8 PpuRead(u16 addr) override;
+
+	void PpuWrite(u16 addr, u8 data) override;
 };

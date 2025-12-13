@@ -1,4 +1,5 @@
 #include "../Mapper.h"
+#include "../../Core/Logger.h"
 
 u8 NROM::CpuRead(u16 addr)
 {
@@ -23,6 +24,7 @@ u8 NROM::CpuRead(u16 addr)
 
 		return m_Cartridge->ReadPrgRom(bank, addr & 0x3FFF);
 	}
+	LOG_VERBOSE("Invalid CPU read from %hx", addr);
 	return 0;
 }
 
@@ -32,7 +34,9 @@ void NROM::CpuWrite(u16 addr, u8 data)
 	if (addr >= 0x6000 && addr < 0x8000)
 	{
 		m_Cartridge->WriteRam(0, addr & 0x1FFF, data);
+		return;
 	}
+	LOG_VERBOSE("Invalid CPU write to %hx", addr);
 }
 
 u8 NROM::PpuRead(u16 addr)
@@ -41,5 +45,13 @@ u8 NROM::PpuRead(u16 addr)
 	{
 		return m_Cartridge->ReadChrRom(0, addr);
 	}
+	LOG_VERBOSE("Invalid PPU read from %hx", addr);
 	return 0;
+}
+
+
+void NROM::PpuWrite(u16 addr, u8 data)
+{
+	// no writes allowed, do nothing
+	LOG_VERBOSE("Invalid PPU write to %hx", addr);
 }

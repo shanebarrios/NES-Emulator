@@ -2,11 +2,13 @@
 
 #include "../Core/Common.h"
 #include <filesystem>
+#include <memory>
 
 enum class MirrorMode : u8
 {
 	Horizontal,
 	Vertical,
+	SingleScreen,
 	FourScreen
 };
 
@@ -23,7 +25,6 @@ class Cartridge
 {
 public:
 	Cartridge() = default;
-	~Cartridge();
 
 	void LoadFromFile(const std::filesystem::path& path);
 
@@ -46,10 +47,10 @@ public:
 	u8 GetMapperNumber() const { return m_MapperNumber; }
 
 private:
-	PrgRomBank* m_PrgRomBanks = nullptr;
-	ChrRomBank* m_ChrRomBanks = nullptr;
-	RamBank* m_RamBanks = nullptr;
-	u8* m_Trainer = nullptr;
+	std::unique_ptr<PrgRomBank[]> m_PrgRomBanks = nullptr;
+	std::unique_ptr<ChrRomBank[]> m_ChrRomBanks = nullptr;
+	std::unique_ptr<RamBank[]> m_RamBanks = nullptr;
+	std::unique_ptr<u8[]> m_Trainer = nullptr;
 
 	u8 m_NumPrgRomBanks = 0;
 	u8 m_NumChrRomBanks = 0;

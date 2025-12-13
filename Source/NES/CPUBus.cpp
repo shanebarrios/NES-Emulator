@@ -109,11 +109,13 @@ void CPUBus::Write(u16 addr, u8 val)
 		{
 		case OAMDMA: 
 		{
+			Memory<256> buf;
 			const u16 base = val * 0x100;
-			for (u8 offset = 0; offset < 256; offset++)
+			for (usize offset = 0; offset < 256; offset++)
 			{
-				m_Ppu->WriteToOAM(offset, Read(base + offset));
+				buf[offset] = Read(base + offset);
 			}
+			m_Ppu->DMA(buf);
 			return;
 		}
 		default:

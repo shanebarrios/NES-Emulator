@@ -38,7 +38,7 @@ template <typename T, size_t N>
 using Array = std::array<T, N>;
 
 template <typename T, size_t M, size_t N>
-using Array2D = std::array<std::array<T, N>, M>;
+using Array2D = std::array<std::array<T, M>, N>;
 
 template <size_t N>
 using Memory = Array<u8, N>;

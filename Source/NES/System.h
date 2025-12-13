@@ -4,29 +4,39 @@
 #include "CPU.h"
 #include "CPUBus.h"
 #include "Cartridge.h"
-#include "MMC.h"
+#include "SystemCommon.h"
 #include "PPU.h"
 
 #include <filesystem>
 #include <memory>
 
-inline constexpr usize SYSTEM_RAM_SIZE = 0x800;
+
 
 class System
 {
 public:
+	static constexpr double MASTER_CLOCK_PERIOD = 1.0 / (21.477272e6);
+	// Period between every CPU cycle
+	static constexpr double UPDATE_PERIOD = MASTER_CLOCK_PERIOD * 12.0;
+
 	System();
-	~System();
+
+	void LoadPalette(const std::filesystem::path& path, u32 num = 0);
 
 	void LoadROM(const std::filesystem::path& path);
 
-	void PerformCycle();
+	void Reset();
+
+	// Cycles CPU once and PPU 3 times
+	void Update();
 
 private:
-	std::unique_ptr<CPU> m_Cpu = nullptr;
-	std::unique_ptr<Cartridge> m_Cartridge = nullptr;
-	std::unique_ptr<Mapper> m_Mapper = nullptr;
-	std::unique_ptr<PPU> m_Ppu = nullptr;
-	std::unique_ptr<CPUBus> m_CpuBus = nullptr;
-	std::unique_ptr<u8[]> m_SystemRam = nullptr;
+	CPU m_Cpu{};
+	Cartridge m_Cartridge{};
+	PPU m_Ppu{};
+	CPUBus m_CpuBus{};
+	SystemRam m_SystemRam{};
+	SystemPalette m_SystemPalette{};
+
+	std::unique_ptr<Mapper> m_Mapper{};
 };

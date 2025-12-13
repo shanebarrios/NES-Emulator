@@ -4,14 +4,6 @@
 #include <cstring>
 #include <stdexcept>
 
-Cartridge::~Cartridge()
-{
-	delete[] m_ChrRomBanks;
-	delete[] m_PrgRomBanks;
-	delete[] m_RamBanks;
-	delete[] m_Trainer;
-}
-
 void Cartridge::LoadFromFile(const std::filesystem::path& path)
 {
 	std::ifstream inf{ path, std::ios::binary };
@@ -40,8 +32,8 @@ void Cartridge::LoadFromFile(const std::filesystem::path& path)
 	if (m_NumChrRomBanks == 0)
 		throw std::runtime_error{ "Invalid number of CHR_ROM banks" };
 
-	m_PrgRomBanks = new PrgRomBank[m_NumPrgRomBanks];
-	m_ChrRomBanks = new ChrRomBank[m_NumChrRomBanks];
+	m_PrgRomBanks = std::make_unique<PrgRomBank[]>(m_NumPrgRomBanks);
+	m_ChrRomBanks = std::make_unique<ChrRomBank[]>(m_NumChrRomBanks);
 
 	if (header[6] & (1 << 0))
 		m_MirrorMode = MirrorMode::Horizontal;
@@ -61,18 +53,18 @@ void Cartridge::LoadFromFile(const std::filesystem::path& path)
 		m_NumRamBanks = 1;
 
 	if (m_HasRam)
-		m_RamBanks = new RamBank[m_NumRamBanks];
+		m_RamBanks = std::make_unique<RamBank[]>(m_NumRamBanks);
 
 	if (m_HasTrainer)
 	{
-		m_Trainer = new u8[TRAINER_SIZE];
-		inf.read(reinterpret_cast<char*>(m_Trainer), TRAINER_SIZE);
+		m_Trainer = std::make_unique<u8[]>(TRAINER_SIZE);
+		inf.read(reinterpret_cast<char*>(m_Trainer.get()), TRAINER_SIZE);
 		if (inf.eof())
 			throw std::runtime_error{ "Incomplete trainer / missing ROM data" };
 	}
 
-	inf.read(reinterpret_cast<char*>(m_PrgRomBanks), m_NumPrgRomBanks * PRG_ROM_BANK_SIZE);
-	inf.read(reinterpret_cast<char*>(m_ChrRomBanks), m_NumChrRomBanks * CHR_ROM_BANK_SIZE);
+	inf.read(reinterpret_cast<char*>(m_PrgRomBanks.get()), m_NumPrgRomBanks * PRG_ROM_BANK_SIZE);
+	inf.read(reinterpret_cast<char*>(m_ChrRomBanks.get()), m_NumChrRomBanks * CHR_ROM_BANK_SIZE);
 
 	if (inf.eof())
 		throw std::runtime_error{ "Missing ROM data" };

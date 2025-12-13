@@ -275,7 +275,6 @@ void CPU::PerformCycle()
 		// Treat as NOP if illegal op
 		m_CurrentInstruction = s_OpcodeLookup[0xEA];
 	}
-	PrintState();
 
 	const u16 oldPc = m_Regs.PC;
 
@@ -372,7 +371,6 @@ void CPU::WriteWord(u16 addr, u16 val)
 void CPU::PushStack(u8 val)
 {
 	Write(m_Regs.S + STACK_BEGIN, val);
-	ASSERT_MSG(m_Regs.S != 0, "Stack overflow!");
 	m_Regs.S--;
 }
 
