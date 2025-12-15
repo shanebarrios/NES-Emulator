@@ -34,7 +34,7 @@ Application::Application()
 	m_Window.Init(windowSpec);
 
 	LoadPalette("C:\\Users\\shane\\source\\repos\\NES-Emulator\\Assets\\Palettes\\2C02G_wiki.pal");
-	m_Nes->LoadROM("C:\\Users\\shane\\source\\repos\\NES-Emulator\\ice_climber.nes");
+	m_Nes->LoadROM("C:\\Users\\shane\\source\\repos\\NES-Emulator\\mario.nes");
 	m_Nes->Reset();
 }
 

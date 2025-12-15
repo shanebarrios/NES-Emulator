@@ -264,26 +264,26 @@ void CPU::PerformCycle()
 	if (m_NmiPending)
 	{
 		HandleInterrupt(InterruptType::NMI);
+		m_NextFetchCycle += 7;
 		m_NmiPending = false;
 		return;
 	}
 
+	m_Branched = false;
 	const u8 opCode = Read(m_Regs.PC);
 	
 	m_CurrentInstruction = s_OpcodeLookup[opCode];
 	if (m_CurrentInstruction.instrType == InstrType::None)
 	{
-		// Treat as NOP if illegal op
+		// Treat as NOP if illegal op for now
 		m_CurrentInstruction = s_OpcodeLookup[0xEA];
 	}
-
-	const u16 oldPc = m_Regs.PC;
 
 	//PrintState();
 
 	ExecuteInstruction();
 
-	if (m_Regs.PC == oldPc)
+	if (!m_Branched)
 		m_Regs.PC += m_CurrentInstruction.byteCount;
 }
 
@@ -454,6 +454,7 @@ u8 CPU::Branch(u16 addr)
 	if ((updated & 0xFF00) != ((m_Regs.PC + m_CurrentInstruction.byteCount) & 0xFF00))
 		addCycles++;
 	m_Regs.PC = updated;
+	m_Branched = true;
 
 	return addCycles;
 }
@@ -484,7 +485,7 @@ void CPU::HandleInterrupt(InterruptType interruptType)
 		break;
 	}
 
-	m_NextFetchCycle = m_TotalCycles + 7;
+	m_Branched = true;
 }
 
 u16 CPU::ResolveAddress(AddrMode addrMode) const
@@ -900,6 +901,7 @@ u8 CPU::INY(AddrMode addrMode)
 u8 CPU::JMP(AddrMode addrMode)
 {
 	m_Regs.PC = ResolveAddress(addrMode);
+	m_Branched = true;
 	return 0;
 }
 
@@ -907,6 +909,7 @@ u8 CPU::JSR(AddrMode addrMode)
 {
 	PushStackWord(m_Regs.PC + 2);
 	m_Regs.PC = ResolveAddress(addrMode);
+	m_Branched = true;
 	return 0;
 }
 
@@ -1061,12 +1064,14 @@ u8 CPU::RTI(AddrMode addrMode)
 		.Set(StatusFlag::Negative, flags & StatusFlag::Negative);
 
 	m_Regs.PC = PopStackWord();
+	m_Branched = true;
 	return 0;
 }
 
 u8 CPU::RTS(AddrMode addrMode)
 {
 	m_Regs.PC = PopStackWord() + 1;
+	m_Branched = true;
 	return 0;
 }
 

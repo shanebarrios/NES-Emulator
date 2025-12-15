@@ -204,6 +204,8 @@ private:
 
 	Instruction m_CurrentInstruction{};
 
+	bool m_Branched = false;
+
 	bool m_NmiPending = false;
 	bool m_IrqPending = false;
 
