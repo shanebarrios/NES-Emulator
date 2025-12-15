@@ -43,11 +43,11 @@ void Cartridge::LoadFromFile(const std::filesystem::path& path)
 
 	if (header[6] & (1 << 0))
 	{
-		m_MirrorMode = MirrorMode::Horizontal;
+		m_MirrorMode = MirrorMode::Vertical;
 	}
 	else
 	{
-		m_MirrorMode = MirrorMode::Vertical;
+		m_MirrorMode = MirrorMode::Horizontal;
 	}
 
 	m_HasPrgRam = header[6] & (1 << 1);
@@ -91,42 +91,60 @@ void Cartridge::LoadFromFile(const std::filesystem::path& path)
 
 u8 Cartridge::ReadPrgRom(u16 offset) const
 {
-	ASSERT(offset < m_PrgRomSize);
+	if (offset >= m_PrgRomSize)
+	{
+		return 0;
+	}
 
 	return m_PrgRom[offset];
 }
 
 u8 Cartridge::ReadChrRom(u16 offset) const
 {
-	ASSERT(offset < m_ChrRomSize);
+	if (offset >= m_ChrRomSize)
+	{
+		return 0;
+	}
 
 	return m_ChrRom[offset];
 }
 
 u8 Cartridge::ReadPrgRam(u16 offset) const
 {
-	ASSERT(offset < m_PrgRamSize);
+	if (offset >= m_PrgRamSize)
+	{
+		return 0;
+	}
 
 	return m_PrgRam[offset];
 }
 
 u8 Cartridge::ReadChrRam(u16 offset) const
 {
-	ASSERT(m_ChrRam && offset < 0x2000);
+	if (!m_ChrRam || offset >= 0x2000)
+	{
+		return 0;
+	}
 
 	return m_ChrRam[offset];
 }
 
 void Cartridge::WritePrgRam(u16 offset, u8 data)
 {
-	ASSERT(offset < m_PrgRamSize);
+	if (offset >= m_PrgRamSize)
+	{
+		return;
+	}
 
 	m_PrgRam[offset] = data;
 }
 
 void Cartridge::WriteChrRam(u16 offset, u8 data)
 {
-	ASSERT(m_ChrRam && offset < 0x2000);
+	if (!m_ChrRam || offset >= 0x2000)
+	{
+		return;
+	}
 
 	m_ChrRam[offset] = data;
 }
