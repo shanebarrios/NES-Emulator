@@ -264,6 +264,7 @@ void CPU::PerformCycle()
 	if (m_NmiPending)
 	{
 		HandleInterrupt(InterruptType::NMI);
+		m_NmiPending = false;
 		return;
 	}
 
@@ -278,12 +279,15 @@ void CPU::PerformCycle()
 
 	const u16 oldPc = m_Regs.PC;
 
+	//PrintState();
+
 	ExecuteInstruction();
 
 	if (m_Regs.PC == oldPc)
 		m_Regs.PC += m_CurrentInstruction.byteCount;
 }
 
+// TODO: fix side effects
 void CPU::PrintState() const
 {
 	char buf[128];
@@ -304,7 +308,7 @@ void CPU::PrintState() const
 		m_CurrentInstruction.addrMode,
 		operand,
 		addr,
-		Read(addr),
+		0,
 		addrBuf,
 		sizeof(addrBuf));
 
@@ -340,7 +344,7 @@ void CPU::ExecuteInstruction()
 
 	const u8 addCycles = (this->*f)(m_CurrentInstruction.addrMode);
 
-	m_NextFetchCycle = m_TotalCycles + addCycles + m_CurrentInstruction.cycleCount;
+	m_NextFetchCycle += addCycles + m_CurrentInstruction.cycleCount;
 }
 
 u8 CPU::Read(u16 addr) const
@@ -357,6 +361,11 @@ u16 CPU::ReadWord(u16 addr) const
 
 void CPU::Write(u16 addr, u8 val)
 {
+	if (addr == 0x4014)
+	{
+		m_NextFetchCycle += 513;
+	}
+
 	return m_Bus->Write(addr, val);
 }
 
@@ -664,6 +673,10 @@ u8 CPU::ADC(AddrMode addrMode)
 u8 CPU::AND(AddrMode addrMode)
 {
 	const u8 val = Read(ResolveAddress(addrMode));
+	//if (addrMode == AddrMode::Immediate && val == (1 << 6))
+	//{
+	//	__debugbreak();
+	//}
 	m_Regs.A &= val;
 	m_StatusReg.Set(StatusFlag::Zero, m_Regs.A == 0);
 	m_StatusReg.Set(StatusFlag::Negative, m_Regs.A & 0x80);

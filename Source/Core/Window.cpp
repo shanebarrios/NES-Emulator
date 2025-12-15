@@ -52,7 +52,11 @@ LRESULT Window::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 		return 0;
 	}
-
+	case WM_CLOSE:
+	{
+		m_ShouldQuit = true;
+		return 0;
+	}
 	case WM_DESTROY:
 	{
 		m_ShouldQuit = true;
@@ -63,10 +67,6 @@ LRESULT Window::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 		PAINTSTRUCT ps;
 		const HDC hdc = BeginPaint(m_Hwnd, &ps);
-		//const LONG x = ps.rcPaint.left;
-		//const LONG y = ps.rcPaint.right;
-		//const LONG width = ps.rcPaint.right - ps.rcPaint.left;
-		//const LONG height = ps.rcPaint.bottom - ps.rcPaint.top;
 		StretchDIBits(hdc,
 			0, 0, m_Width, m_Height,
 			0, 0, m_RenderWidth, m_RenderHeight,

@@ -122,6 +122,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Core\Application.cpp" />
     <ClCompile Include="Source\Core\Logger.cpp" />
     <ClCompile Include="Source\NES\CPUBus.cpp" />
     <ClCompile Include="Source\NES\Cartridge.cpp" />
@@ -131,10 +132,11 @@
     <ClCompile Include="Source\NES\Mappers\Mapper.cpp" />
     <ClCompile Include="Source\NES\Mappers\NROM.cpp" />
     <ClCompile Include="Source\NES\PPU.cpp" />
-    <ClCompile Include="Source\NES\System.cpp" />
+    <ClCompile Include="Source\NES\NES.cpp" />
     <ClCompile Include="Source\Core\Window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Core\Application.h" />
     <ClInclude Include="Source\Core\Common.h" />
     <ClInclude Include="Source\Core\Logger.h" />
     <ClInclude Include="Source\NES\CPUBus.h" />
@@ -143,7 +145,7 @@
     <ClInclude Include="Source\NES\DebugUtils.h" />
     <ClInclude Include="Source\NES\Mapper.h" />
     <ClInclude Include="Source\NES\PPU.h" />
-    <ClInclude Include="Source\NES\System.h" />
+    <ClInclude Include="Source\NES\NES.h" />
     <ClInclude Include="Source\Core\Window.h" />
     <ClInclude Include="Source\Core\WindowsCommon.h" />
     <ClInclude Include="Source\NES\SystemCommon.h" />

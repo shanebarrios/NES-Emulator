@@ -20,81 +20,113 @@ void Cartridge::LoadFromFile(const std::filesystem::path& path)
 	inf.read(reinterpret_cast<char*>(header), 16);
 
 	if (inf.eof() || std::strncmp(reinterpret_cast<char*>(header), expectedHeader, 4) != 0)
+	{
 		throw std::runtime_error{ "Invalid rom header" };
+	}
 
-	m_NumPrgRomBanks = header[4];
+	m_PrgRomSize = header[4] * 0x4000;
+	if (m_PrgRomSize == 0)
+	{
+		throw std::runtime_error{ "Invalid PRG_ROM size" };
+	}
+	m_PrgRom = std::make_unique<u8[]>(m_PrgRomSize);
 
-	if (m_NumPrgRomBanks == 0)
-		throw std::runtime_error{ "Invalid number of PRG_ROM banks" };
-
-	m_NumChrRomBanks = header[5];
-
-	if (m_NumChrRomBanks == 0)
-		throw std::runtime_error{ "Invalid number of CHR_ROM banks" };
-
-	m_PrgRomBanks = std::make_unique<PrgRomBank[]>(m_NumPrgRomBanks);
-	m_ChrRomBanks = std::make_unique<ChrRomBank[]>(m_NumChrRomBanks);
+	m_ChrRomSize = header[5] * 0x2000;
+	if (m_ChrRomSize == 0)
+	{
+		m_ChrRam = std::make_unique<u8[]>(0x2000);
+	}
+	else
+	{
+		m_ChrRom = std::make_unique<u8[]>(m_ChrRomSize);
+	}
 
 	if (header[6] & (1 << 0))
+	{
 		m_MirrorMode = MirrorMode::Horizontal;
+	}
 	else
+	{
 		m_MirrorMode = MirrorMode::Vertical;
+	}
 
-	m_HasRam = header[6] & (1 << 1);
+	m_HasPrgRam = header[6] & (1 << 1);
 	m_HasTrainer = header[6] & (1 << 2);
-
 	if (header[6] & (1 << 3))
+	{
 		m_MirrorMode = MirrorMode::FourScreen;
-
+	}
 	m_MapperNumber = (header[6] >> 4) | (header[7] & 0xF0);
 
-	m_NumRamBanks = header[8];
-	if (m_HasRam && m_NumRamBanks == 0)
-		m_NumRamBanks = 1;
-
-	if (m_HasRam)
-		m_RamBanks = std::make_unique<RamBank[]>(m_NumRamBanks);
+	m_PrgRamSize = header[8] * 0x2000;
+	if (m_HasPrgRam && m_PrgRamSize == 0)
+	{
+		m_PrgRamSize = 0x2000u;
+	}
+	if (m_HasPrgRam)
+	{
+		m_PrgRam = std::make_unique<u8[]>(m_PrgRamSize);
+	}
 
 	if (m_HasTrainer)
 	{
-		m_Trainer = std::make_unique<u8[]>(TRAINER_SIZE);
-		inf.read(reinterpret_cast<char*>(m_Trainer.get()), TRAINER_SIZE);
+		m_Trainer = std::make_unique<u8[]>(0x200);
+		inf.read(reinterpret_cast<char*>(m_Trainer.get()), 0x200);
 		if (inf.eof())
 			throw std::runtime_error{ "Incomplete trainer / missing ROM data" };
 	}
 
-	inf.read(reinterpret_cast<char*>(m_PrgRomBanks.get()), m_NumPrgRomBanks * PRG_ROM_BANK_SIZE);
-	inf.read(reinterpret_cast<char*>(m_ChrRomBanks.get()), m_NumChrRomBanks * CHR_ROM_BANK_SIZE);
+	inf.read(reinterpret_cast<char*>(m_PrgRom.get()), m_PrgRomSize);
+
+	if (m_ChrRomSize > 0)
+	{
+		inf.read(reinterpret_cast<char*>(m_ChrRom.get()), m_ChrRomSize);
+	}
 
 	if (inf.eof())
+	{
 		throw std::runtime_error{ "Missing ROM data" };
-	
+	}	
 }
 
-u8 Cartridge::ReadPrgRom(u8 bank, u16 offset) const
+u8 Cartridge::ReadPrgRom(u16 offset) const
 {
-	ASSERT(bank < m_NumPrgRomBanks);
+	ASSERT(offset < m_PrgRomSize);
 
-	return m_PrgRomBanks[bank][offset];
+	return m_PrgRom[offset];
 }
 
-u8 Cartridge::ReadChrRom(u8 bank, u16 offset) const
+u8 Cartridge::ReadChrRom(u16 offset) const
 {
-	ASSERT(bank < m_NumChrRomBanks);
+	ASSERT(offset < m_ChrRomSize);
 
-	return m_ChrRomBanks[bank][offset];
+	return m_ChrRom[offset];
 }
 
-u8 Cartridge::ReadRam(u8 bank, u16 offset) const
+u8 Cartridge::ReadPrgRam(u16 offset) const
 {
-	ASSERT(bank < m_NumRamBanks);
+	ASSERT(offset < m_PrgRamSize);
 
-	return m_RamBanks[bank][offset];
+	return m_PrgRam[offset];
 }
 
-void Cartridge::WriteRam(u8 bank, u16 offset, u8 data)
+u8 Cartridge::ReadChrRam(u16 offset) const
 {
-	ASSERT(bank < m_NumRamBanks);
+	ASSERT(m_ChrRam && offset < 0x2000);
 
-	m_RamBanks[bank][offset] = data;
+	return m_ChrRam[offset];
+}
+
+void Cartridge::WritePrgRam(u16 offset, u8 data)
+{
+	ASSERT(offset < m_PrgRamSize);
+
+	m_PrgRam[offset] = data;
+}
+
+void Cartridge::WriteChrRam(u16 offset, u8 data)
+{
+	ASSERT(m_ChrRam && offset < 0x2000);
+
+	m_ChrRam[offset] = data;
 }

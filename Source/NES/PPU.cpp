@@ -55,24 +55,23 @@ static constexpr u16 PRERENDER_LINE = 261;
 
 // note: backdrop color can be overwritten if m_V points to palette RAM (3F00-3FFF)
 
-PPU::PPU()
+PPU::PPU() :
+	PPU {nullptr, nullptr}
 {
 	
 }
 
-PPU::PPU(CPU* cpu, Mapper* mapper, const RGB8* systemPalette) : 
+PPU::PPU(CPU* cpu, Mapper* mapper) : 
 	m_Cpu {cpu},
-	m_Mapper{mapper},
-	m_SystemPalette{systemPalette}
+	m_Mapper{mapper}
 {
-
+	m_Framebuffer = std::make_unique<u8[]>(SCREEN_WIDTH * SCREEN_HEIGHT);
 }
 
-void PPU::Attach(CPU* cpu, Mapper* mapper, const RGB8* systemPalette)
+void PPU::Attach(CPU* cpu, Mapper* mapper)
 {
 	m_Cpu = cpu;
 	m_Mapper = mapper;
-	m_SystemPalette = systemPalette;
 }
 
 void PPU::PerformCycle()
@@ -94,6 +93,11 @@ void PPU::PerformCycle()
 		VBlankCycle();
 	}
 
+	AdvanceCycle();
+}
+
+void PPU::AdvanceCycle()
+{
 	m_ScanlineCycle++;
 	bool oddFrame = m_FrameNumber % 2 == 1;
 	// skip a cycle at end of odd frame
@@ -117,7 +121,7 @@ void PPU::PerformCycle()
 			m_FramebufferReady = false;
 		}
 	}
-	if (m_Scanline == POST_RENDER_START)
+	if (m_Scanline == POST_RENDER_START && m_ScanlineCycle == 0)
 	{
 		m_FramebufferReady = true;
 	}
@@ -130,10 +134,7 @@ void PPU::Reset()
 	m_Oam.fill(0);
 	m_Palette.fill(0);
 	m_SecondaryOam.fill(0);
-	for (auto& row : m_Framebuffer)
-	{
-		row.fill(m_SystemPalette[0]);
-	}
+	std::memset(m_Framebuffer.get(), 0, SCREEN_WIDTH * SCREEN_HEIGHT);
 
 	m_CtrlReg = m_MaskReg = m_StatusReg = m_OamAddr = m_Scroll = 0;
 
@@ -156,18 +157,22 @@ void PPU::PrerenderCycle()
 		m_StatusReg &= ~(STATUS_VBLANK_BIT | STATUS_SPRITE0_HIT_BIT | STATUS_SPRITE_OVERFLOW_BIT);
 	}
 
-	FetchAndUpdate();
+	FetchBackgroundData();
 
-	if (m_ScanlineCycle >= 280 && m_ScanlineCycle <= 304)
+	ShiftRegisters();
+
+	if (m_ScanlineCycle >= 280 && m_ScanlineCycle <= 304 && RenderingEnabled())
 	{
 		// vert(v) = vert(t)
-		const u16 mask = 
-			INTERNAL_COARSE_Y_SCROLL_MASK | 
-			INTERNAL_FINE_Y_SCROLL_MASK | 
+		const u16 mask =
+			INTERNAL_COARSE_Y_SCROLL_MASK |
+			INTERNAL_FINE_Y_SCROLL_MASK |
 			INTERNAL_NAMETABLE_Y_MASK;
 		m_V &= ~mask;
 		m_V |= m_T & mask;
 	}
+
+	UpdateV();
 }
 
 void PPU::VBlankCycle()
@@ -176,82 +181,108 @@ void PPU::VBlankCycle()
 	if (m_Scanline == 241 && m_ScanlineCycle == 1)
 	{
 		m_StatusReg |= STATUS_VBLANK_BIT;
-		m_Cpu->TriggerNMI();
+		if (m_CtrlReg & CTRL_NMI_ENABLE_BIT)
+		{
+			m_Cpu->TriggerNMI();
+		}
 	}
 }
 
 void PPU::VisibleCycle()
 {
-	FetchAndUpdate();
+	SetPixel();
 
-	const u8 fineX = m_X;
-	const u16 bitIndex = 15 - fineX;
+	FetchBackgroundData();
 
-	const u8 paletteNum =
-		((m_BGTileLowShift >> bitIndex) & 1) |
-		((m_BGTileHighShift >> (bitIndex - 1)) & 0x2);
+	ShiftRegisters();
 
-	const u8 paletteOffset =
-		((m_BGPaletteLowShift >> bitIndex) & 1) |
-		((m_BGPaletteHighShift >> (bitIndex - 1)) & 0x2);
+	UpdateV();
+}
 
-	if (m_ScanlineCycle <= 256)
+void PPU::SetPixel()
+{
+	if (m_ScanlineCycle > 256)
 	{
-		const u16 paletteAddr = (paletteNum << 2) | paletteOffset;
-		const u8 systemPaletteIndex = m_Palette[paletteAddr];
-		const RGB8 color = m_SystemPalette[systemPaletteIndex];
-		const usize y = m_Scanline;
-		const usize x = m_ScanlineCycle - 1;
-		m_Framebuffer[y][x] = color;
+		return;
+	}
 
-		m_BGTileLowShift >>= 1;
-		m_BGTileHighShift >>= 1;
-		m_BGPaletteLowShift >>= 1;
-		m_BGPaletteHighShift >>= 1;
+	const usize y = m_Scanline;
+	const usize x = m_ScanlineCycle - 1;
+
+	if (m_MaskReg & MASK_BACKGROUND_ENABLE_BIT)
+	{
+		const u8 fineX = m_X;
+		const u16 bitIndex = 15 - fineX;
+
+		const u8 paletteOffset =
+			((m_BGTileLowShift >> bitIndex) & 1) |
+			((m_BGTileHighShift >> (bitIndex - 1)) & 0x2);
+
+		const u8 paletteNum =
+			((m_BGPaletteLowShift >> bitIndex) & 1) |
+			((m_BGPaletteHighShift >> (bitIndex - 1)) & 0x2);
+
+		const u16 paletteAddr = (paletteNum << 2) | paletteOffset;
+		const u8 systemPaletteIndex = PaletteRead(paletteAddr);
+
+		m_Framebuffer[y * SCREEN_WIDTH + x] = systemPaletteIndex;
+	}
+	else
+	{
+		m_Framebuffer[y * SCREEN_WIDTH + x] = PaletteRead(0);
 	}
 }
 
-void PPU::FetchAndUpdate()
+void PPU::ShiftRegisters()
 {
-	switch (m_ScanlineCycle % 8)
+	if (!(m_MaskReg & MASK_BACKGROUND_ENABLE_BIT) || 
+		(m_ScanlineCycle >= 257 && m_ScanlineCycle <= 320) || 
+		m_ScanlineCycle >= 337)
 	{
-	// Coarse X increment / feed shift registers
-	case 0: {
-		// Update shift registers (should probably change this to not use magic numbers)
-		const u8 shift = ((m_V >> 4) & 4) | (m_V & 2);
+		return;
+	}
+
+	m_BGTileLowShift <<= 1;
+	m_BGTileHighShift <<= 1;
+	m_BGPaletteLowShift <<= 1;
+	m_BGPaletteHighShift <<= 1;
+
+	if (m_ScanlineCycle % 8 == 0)
+	{
+		const u8 coarseX = m_V & 0x1F;
+		const u8 coarseY = (m_V >> 5) & 0x1F;
+		const u8 shift = ((coarseY & 0x02) << 1) | (coarseX & 0x02);
 		const u8 paletteBits = (m_AT >> shift) & 0b11;
-		const u8 expandedLow = -(paletteBits & 1); 
-		const u8 expandedHigh = -((paletteBits >> 1) & 1);
+		const u8 expandedLow = (paletteBits & 1) ? 0xFF : 0x00;
+		const u8 expandedHigh = (paletteBits & 2) ? 0xFF : 0x00;
 
 		m_BGTileLowShift = (m_BGTileLowShift & 0xFF00) | m_BGLow;
 		m_BGTileHighShift = (m_BGTileHighShift & 0xFF00) | m_BGHigh;
 		m_BGPaletteLowShift = (m_BGPaletteLowShift & 0xFF00) | expandedLow;
 		m_BGPaletteHighShift = (m_BGPaletteHighShift & 0xFF00) | expandedHigh;
-
-
-		if (m_ScanlineCycle >= 257 && m_ScanlineCycle <= 320)
-		{
-			// Don't increment coarse X during H blank
-			break;
-		}
-
-		// Continue to next name table if coarse X == 31 (stolen from nesdev wiki)
-		if ((m_V & INTERNAL_COARSE_X_SCROLL_MASK) == 31)
-		{
-			m_V = (m_V & ~INTERNAL_COARSE_X_SCROLL_MASK) ^ (1 << INTERNAL_NAMETABLE_SELECT_SHIFT);
-		}
-		// Otherwise increment coarse X normally
-		else
-		{
-			m_V += 1;
-		}
-		break;
 	}
+}
+
+bool PPU::RenderingEnabled() const
+{
+	return m_MaskReg & (MASK_BACKGROUND_ENABLE_BIT | MASK_SPRITE_ENABLE_BIT);
+}
+
+void PPU::FetchBackgroundData()
+{
+	// No fetch when background disabled
+	if (!(m_MaskReg & MASK_BACKGROUND_ENABLE_BIT))
+	{
+		return;
+	}
+
+	switch (m_ScanlineCycle % 8)
+	{
 	// NT fetch
 	case 1:
 		m_NT = NametableRead(m_V & 0x0FFF);
 		break;
-	// AT fetch
+		// AT fetch
 	case 3:
 		m_AT = NametableRead(
 			0x3C0 | (m_V & 0x0C00) | ((m_V >> 4) & 0x38) | ((m_V >> 2) & 0x07)
@@ -282,34 +313,27 @@ void PPU::FetchAndUpdate()
 		m_BGHigh = m_Mapper->PpuRead(addr);
 		break;
 	}
+	default:
+		break;
+	}
+}
+
+void PPU::UpdateV()
+{
+	if (!RenderingEnabled())
+	{
+		return;
 	}
 
-	// Fine y increment (stolen from nesdev wiki)
+	// Skip on H blank
+	if (m_ScanlineCycle % 8 == 0 && (m_ScanlineCycle <= 256 || m_ScanlineCycle >= 328))
+	{
+		IncHoriV();
+	}
+
 	if (m_ScanlineCycle == 256)
 	{
-		if ((m_V & 0x7000) != 0x7000) // fine Y < 7
-		{
-			m_V += 0x1000;
-		}
-		else
-		{
-			m_V &= ~0x7000; // fine Y = 0
-			u8 coarseY = (m_V & 0x03E0) >> 5;
-			if (coarseY == 29)
-			{
-				coarseY = 0;
-				m_V ^= 0x0800; // switch nametable
-			}
-			else if (coarseY == 31)
-			{
-				coarseY = 0;
-			}
-			else
-			{
-				coarseY++;
-			}
-			m_V = (m_V & ~0x03E0) | (coarseY << 5); // update coarse y
-		}
+		IncVertV();
 	}
 
 	if (m_ScanlineCycle == 257)
@@ -323,14 +347,65 @@ void PPU::FetchAndUpdate()
 	}
 }
 
+void PPU::IncHoriV()
+{
+	// Continue to next name table if coarse X == 31 (stolen from nesdev wiki)
+	if ((m_V & INTERNAL_COARSE_X_SCROLL_MASK) == 31)
+	{
+		m_V = (m_V & ~INTERNAL_COARSE_X_SCROLL_MASK) ^ (1 << INTERNAL_NAMETABLE_SELECT_SHIFT);
+	}
+	// Otherwise increment coarse X normally
+	else
+	{
+		m_V += 1;
+	}
+}
+
+// Stolen from nesdev wiki
+void PPU::IncVertV()
+{
+	if ((m_V & 0x7000) != 0x7000) // fine Y < 7
+	{
+		m_V += 0x1000;
+	}
+	else
+	{
+		m_V &= ~0x7000; // fine Y = 0
+		u8 coarseY = (m_V & 0x03E0) >> 5;
+		if (coarseY == 29)
+		{
+			coarseY = 0;
+			m_V ^= 0x0800; // switch nametable
+		}
+		else if (coarseY == 31)
+		{
+			coarseY = 0;
+		}
+		else
+		{
+			coarseY++;
+		}
+		m_V = (m_V & ~0x03E0) | (coarseY << 5); // update coarse y
+	}
+}
+
 void PPU::SetCtrl(u8 data)
 {
 	if (IgnoresWrites())
 		return;
 
+	const u8 old = m_CtrlReg;
+
 	m_CtrlReg = data;
 	m_T = (m_T & ~INTERNAL_NAMETABLE_SELECT_MASK) 
 		| ((data & CTRL_NAMETABLE_MASK) << INTERNAL_NAMETABLE_SELECT_SHIFT);
+
+	if (!(old & CTRL_NMI_ENABLE_BIT) && 
+		(data & CTRL_NMI_ENABLE_BIT) &&
+		(m_StatusReg & STATUS_VBLANK_BIT))
+	{
+		m_Cpu->TriggerNMI();
+	}
 }
 
 void PPU::SetMask(u8 data)
@@ -407,6 +482,7 @@ void PPU::SetAddr(u8 data)
 	else
 	{
 		m_T = (m_T & 0xFF00) | data;
+		m_V = m_T;
 	}
 
 	m_W ^= 1;
@@ -463,10 +539,10 @@ u8 PPU::Read(u16 addr)
 	{
 		return NametableRead(addr - 0x2000);
 	}
-	else if (addr < 0x3F20)
+	else if (addr < 0x4000)
 	{
 		// if divisible by 4, mirror to 0x3F00
-		return (addr & 0x3) ? m_Palette[addr & 0x1F] : m_Palette[0];
+		return PaletteRead(addr & 0x1F);
 	}
 	return 0;
 }
@@ -483,14 +559,10 @@ void PPU::Write(u16 addr, u8 val)
 		NametableWrite(addr - 0x2000, val);
 		return;
 	}
-	else if (addr < 0x3F20)
+	else if (addr < 0x4000)
 	{
 		// divisible by 4, mirror to 0x3F00
-		if (!(addr & 0x3))
-		{
-			m_Palette[0] = val;
-		}
-		m_Palette[addr & 0x1F] = val;
+		PaletteWrite(addr & 0x1F, val);
 		return;
 	}
 }
@@ -521,7 +593,22 @@ void PPU::NametableWrite(u16 offset, u8 val)
 	}
 }
 
+u8 PPU::PaletteRead(u16 offset)
+{
+	return (offset & 0x3) ? m_Palette[offset] : m_Palette[0];
+}
+
+void PPU::PaletteWrite(u16 offset, u8 val)
+{
+	if (!(offset & 0x3))
+	{
+		offset = 0;
+	}
+	m_Palette[offset] = val;
+}
+
 bool PPU::IgnoresWrites()
 {
+	//return false;
 	return m_FrameNumber == 0 && m_Scanline < 261;
 }

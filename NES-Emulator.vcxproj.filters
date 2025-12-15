@@ -30,7 +30,7 @@
     <ClCompile Include="Source\Main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\NES\System.cpp">
+    <ClCompile Include="Source\NES\NES.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source\Core\Window.cpp">
@@ -48,6 +48,9 @@
     <ClCompile Include="Source\NES\Mappers\Mapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Core\Application.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\NES\CPUBus.h">
@@ -62,7 +65,7 @@
     <ClInclude Include="Source\NES\DebugUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\NES\System.h">
+    <ClInclude Include="Source\NES\NES.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\Core\Window.h">
@@ -84,6 +87,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\NES\SystemCommon.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\Application.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

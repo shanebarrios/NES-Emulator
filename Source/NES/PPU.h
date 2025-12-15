@@ -1,27 +1,22 @@
 #pragma once
 
-#include <array>
 #include "../Core/Common.h"
 #include "Mapper.h"
-#include "SystemCommon.h"
 
 class Cartridge;
 class CPU;
-struct RGB8;
-
-inline constexpr u16 SCREEN_WIDTH = 256;
-inline constexpr u16 SCREEN_HEIGHT = 240;
-
-using PPUFramebuffer = Array2D<RGB8, SCREEN_WIDTH, SCREEN_HEIGHT>;
 
 class PPU
 {
 public:
+	static constexpr u16 SCREEN_WIDTH = 256;
+	static constexpr u16 SCREEN_HEIGHT = 240;
+
 	PPU();
 
-	PPU(CPU* cpu, Mapper* mapper, const RGB8* systemPalette);
+	PPU(CPU* cpu, Mapper* mapper);
 
-	void Attach(CPU* cpu, Mapper* mapper, const RGB8* systemPalette);
+	void Attach(CPU* cpu, Mapper* mapper);
 
 	void Reset();
 
@@ -31,7 +26,7 @@ public:
 
 	void ClearFramebufferReady() { m_FramebufferReady = false; }
 
-	const PPUFramebuffer& GetFramebuffer() const { return m_Framebuffer; }
+	const u8* GetFramebuffer() const { return m_Framebuffer.get(); }
 
 	void SetCtrl(u8 data);
 
@@ -64,25 +59,43 @@ private:
 
 	void NametableWrite(u16 offset, u8 val);
 
+	u8 PaletteRead(u16 offset);
+
+	void PaletteWrite(u16 offset, u8 val);
+
 	void PrerenderCycle();
 
 	void VBlankCycle();
 
 	void VisibleCycle();
 
-	void FetchAndUpdate();
+	void FetchBackgroundData();
+
+	void UpdateV();
 
 	bool IgnoresWrites();
+
+	void AdvanceCycle();
+
+	void SetPixel();
+
+	void ShiftRegisters();
+
+	void IncHoriV();
+
+	void IncVertV();
+
+	bool RenderingEnabled() const;
 
 private:
 	Memory<0x800> m_Vram{};
 	Memory<0x100> m_Oam{};
 	Memory<0x20> m_Palette{};
 	Memory<0x20> m_SecondaryOam{};
+	std::unique_ptr<u8[]> m_Framebuffer = nullptr;
 
 	CPU* m_Cpu = nullptr;
 	Mapper* m_Mapper = nullptr;
-	const RGB8* m_SystemPalette = nullptr;
 
 	// I/O registers
 	u8 m_CtrlReg = 0;
@@ -116,6 +129,4 @@ private:
 	u64 m_FrameNumber = 0;
 
 	bool m_FramebufferReady = false;
-
-	PPUFramebuffer m_Framebuffer{};
 };

@@ -4,6 +4,7 @@
 #include "WindowsCommon.h"
 #include <string>
 #include <span>
+#include <memory>
 
 struct WindowSpec
 {
@@ -43,8 +44,6 @@ private:
 	static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 	LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam);
-
-	void ResizeDIBSection(int width, int height);
 
 	void UpdateWindowSurface(HDC deviceContext, int x, int y, int width, int height);
 

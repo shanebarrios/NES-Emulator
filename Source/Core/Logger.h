@@ -36,7 +36,7 @@ private:
 	LogLevel m_Level = LogLevel::Info;
 	FILE* m_Out = stdout;
 
-	Array<char, 512> m_Buf;
+	Array<char, 512> m_Buf{};
 };
 
 #include "Logger.inl"

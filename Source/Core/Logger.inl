@@ -16,7 +16,7 @@ inline constexpr std::string_view LogLevelToPrefix(LogLevel level)
 }
 
 template <LogLevel level, typename... Args>
-void Logger::Log(std::string_view format, Args&&... args)
+inline void Logger::Log(std::string_view format, Args&&... args)
 {
 	if (static_cast<int>(level) < static_cast<int>(m_Level)) return;
 
