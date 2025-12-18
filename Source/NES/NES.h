@@ -6,6 +6,7 @@
 #include "Cartridge.h"
 #include "SystemCommon.h"
 #include "PPU.h"
+#include "VirtualController.h"
 
 #include <filesystem>
 #include <memory>
@@ -24,10 +25,14 @@ public:
 
 	void Reset();
 
-	PPU& GetPPU() { return m_Ppu; }
+	void StepFrame();
+
+	const u8* GetFramebuffer() const;
 
 	// Cycles CPU once and PPU 3 times
 	void Update();
+
+	void SetButtonState(ControllerButton button, bool pressed);
 
 private:
 	CPU m_Cpu{};
@@ -35,6 +40,7 @@ private:
 	PPU m_Ppu{};
 	CPUBus m_CpuBus{};
 	SystemRam m_SystemRam{};
+	VirtualController m_VirtualController{};
 
 	std::unique_ptr<Mapper> m_Mapper{};
 };

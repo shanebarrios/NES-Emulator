@@ -31,11 +31,17 @@ Application::Application()
 		.width = 1280, .height = 1200,
 		.renderWidth = 256, .renderHeight = 240
 	};
-	m_Window.Init(windowSpec);
-
 	LoadPalette("C:\\Users\\shane\\source\\repos\\NES-Emulator\\Assets\\Palettes\\2C02G_wiki.pal");
-	m_Nes->LoadROM("C:\\Users\\shane\\source\\repos\\NES-Emulator\\mario.nes");
+	m_Nes->LoadROM("C:\\Users\\shane\\source\\repos\\NES-Emulator\\ice_climber.nes");
 	m_Nes->Reset();
+
+	m_Window.Init(windowSpec);
+	m_Window.SetKeyCallback([this](KeyEvent event){
+		OnKeyEvent(event);
+	});
+	m_Window.SetMouseMoveCallback([this](MouseMoveEvent event) {
+		OnMouseMoveEvent(event);
+	});
 }
 
 Application::~Application()
@@ -70,10 +76,10 @@ void Application::LoadPalette(const std::filesystem::path& path, int num)
 	}
 }
 
-void Application::Render()
+void Application::OnRender()
 {
 	auto windowFramebuffer = m_Window.GetFramebuffer();
-	const u8* ppuFramebuffer = m_Nes->GetPPU().GetFramebuffer();
+	const u8* ppuFramebuffer = m_Nes->GetFramebuffer();
 	for (usize y = 0; y < PPU::SCREEN_HEIGHT; y++)
 	{
 		const usize srcRow = y;
@@ -88,7 +94,53 @@ void Application::Render()
 		}
 	}
 	m_Window.Present();
-	m_Nes->GetPPU().ClearFramebufferReady();
+}
+
+void Application::OnKeyEvent(KeyEvent event)
+{
+	ControllerButton button;
+
+	switch (event.code)
+	{
+	case KeyCode::Z:
+		button = ControllerButton::B;
+		break;
+	case KeyCode::X:
+		button = ControllerButton::A;
+		break;
+	case KeyCode::LeftArrow:
+		button = ControllerButton::Left;
+		break;
+	case KeyCode::UpArrow:
+		button = ControllerButton::Up;
+		break;
+	case KeyCode::RightArrow:
+		button = ControllerButton::Right;
+		break;
+	case KeyCode::DownArrow:
+		button = ControllerButton::Down;
+		break;
+	case KeyCode::RightShift:
+		button = ControllerButton::Select;
+		break;
+	case KeyCode::Enter:
+		button = ControllerButton::Start;
+		break;
+	default:
+		// No NES key mapping, dont handle the event
+		return;
+	}
+
+	const bool pressed = 
+		event.type == KeyEventType::Down || 
+		event.type == KeyEventType::Repeat;
+
+	m_Nes->SetButtonState(button, pressed);
+}
+
+void Application::OnMouseMoveEvent(MouseMoveEvent event)
+{
+	// nothing for now
 }
 
 void Application::Run()
@@ -110,12 +162,9 @@ void Application::Run()
 		nextFrame += nanoseconds(frameTimeNS);
 
 		PollEvents();
-		while (!m_Nes->GetPPU().FramebufferReady())
-		{
-			m_Nes->Update();
-		}
+		m_Nes->StepFrame();
 
-		Render();
+		OnRender();
 
 		auto frameEnd = clock::now();
 

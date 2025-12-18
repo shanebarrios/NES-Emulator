@@ -134,6 +134,7 @@
     <ClCompile Include="Source\NES\PPU.cpp" />
     <ClCompile Include="Source\NES\NES.cpp" />
     <ClCompile Include="Source\Core\Window.cpp" />
+    <ClCompile Include="Source\NES\VirtualController.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Core\Application.h" />
@@ -149,6 +150,7 @@
     <ClInclude Include="Source\Core\Window.h" />
     <ClInclude Include="Source\Core\WindowsCommon.h" />
     <ClInclude Include="Source\NES\SystemCommon.h" />
+    <ClInclude Include="Source\NES\VirtualController.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

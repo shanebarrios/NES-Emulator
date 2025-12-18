@@ -16,7 +16,11 @@ public:
 private:
 	void LoadPalette(const std::filesystem::path& path, int num = 0);
 
-	void Render();
+	void OnKeyEvent(KeyEvent event);
+
+	void OnMouseMoveEvent(MouseMoveEvent event);
+
+	void OnRender();
 
 private:
 	std::unique_ptr<NES> m_Nes = nullptr;

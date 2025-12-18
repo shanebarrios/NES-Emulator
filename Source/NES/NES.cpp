@@ -22,7 +22,7 @@ void NES::LoadROM(const std::filesystem::path& path)
 
 	m_Mapper->Attach(&m_Cartridge);
 	m_Ppu.Attach(&m_Cpu, m_Mapper.get());
-	m_CpuBus.Attach(m_Mapper.get(), &m_Ppu, m_SystemRam.data());
+	m_CpuBus.Attach(m_Mapper.get(), &m_Ppu, m_SystemRam.data(), &m_VirtualController);
 	m_Cpu.Attach(&m_CpuBus);
 }
 
@@ -32,10 +32,29 @@ void NES::Reset()
 	m_Ppu.Reset();
 }
 
+void NES::StepFrame()
+{
+	while (!m_Ppu.FramebufferReady())
+	{
+		Update();
+	}
+	m_Ppu.ClearFramebufferReady();
+}
+
 void NES::Update()
 {
 	m_Cpu.PerformCycle();
 	m_Ppu.PerformCycle();
 	m_Ppu.PerformCycle();
 	m_Ppu.PerformCycle();
+}
+
+const u8* NES::GetFramebuffer() const
+{
+	return m_Ppu.GetFramebuffer();
+}
+
+void NES::SetButtonState(ControllerButton button, bool pressed)
+{
+	m_VirtualController.SetButtonState(button, pressed);
 }

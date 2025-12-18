@@ -2,6 +2,7 @@
 
 #include "Mapper.h"
 #include "PPU.h"
+#include "VirtualController.h"
 #include "../Core/Logger.h"
 
 static constexpr u16 PPUCTRL = 0x2000;
@@ -13,21 +14,23 @@ static constexpr u16 PPUSCROLL = 0x2005;
 static constexpr u16 PPUADDR = 0x2006;
 static constexpr u16 PPUDATA = 0x2007;
 static constexpr u16 OAMDMA = 0x4014;
+static constexpr u16 JOY1 = 0x4016;
+static constexpr u16 JOY2 = 0x4017;
 
-#define PPU_IO_MIRROR(addr) (0x2000 | (addr & 0xF))
-
-CPUBus::CPUBus(Mapper* mapper, PPU* ppu, u8* ram) : 
+CPUBus::CPUBus(Mapper* mapper, PPU* ppu, u8* ram, VirtualController* controller) : 
 	m_Mapper{ mapper }, 
 	m_Ppu{ ppu }, 
-	m_Ram{ram }
+	m_Ram{ram },
+	m_Controller{controller}
 {
 }
 
-void CPUBus::Attach(Mapper* mapper, PPU* ppu, u8* ram)
+void CPUBus::Attach(Mapper* mapper, PPU* ppu, u8* ram, VirtualController* controller)
 {
 	m_Mapper = mapper;
 	m_Ppu = ppu;
 	m_Ram = ram;
+	m_Controller = controller;
 }
 
 u8 CPUBus::Read(u16 addr)
@@ -38,7 +41,8 @@ u8 CPUBus::Read(u16 addr)
 	}
 	else if (addr < 0x4000)
 	{
-		switch (PPU_IO_MIRROR(addr))
+		const u16 mirrored = 0x2000 | (addr & 0xF);
+		switch (mirrored)
 		{
 		case PPUSTATUS:
 			return m_Ppu->GetStatus();
@@ -53,7 +57,16 @@ u8 CPUBus::Read(u16 addr)
 	}
 	else if (addr < 0x4020)
 	{
-		// APU and I/O functionality, most are normally disabled
+		// TODO: handle open bus for upper bits of controller
+		// Also add APU here
+		switch (addr)
+		{
+		case JOY1:
+			return m_Controller->ReadBit();
+		default:
+			break;
+			// open bus
+		}
 	}
 	else
 	{
@@ -74,7 +87,8 @@ void CPUBus::Write(u16 addr, u8 val)
 	}
 	else if (addr < 0x4000)
 	{
-		switch (PPU_IO_MIRROR(addr))
+		const u16 mirrored = 0x2000 | (addr & 0xF);
+		switch (mirrored)
 		{
 		case PPUCTRL:
 			m_Ppu->SetCtrl(val);
@@ -118,6 +132,9 @@ void CPUBus::Write(u16 addr, u8 val)
 			m_Ppu->DMA(buf);
 			return;
 		}
+		case JOY1:
+			m_Controller->Write(val & 1);
+			break;
 		default:
 			break;
 			// invalid write
