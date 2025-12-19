@@ -2,9 +2,26 @@
 
 #include "../Core/Common.h"
 #include "Mapper.h"
+#include <bitset>
 
 class Cartridge;
 class CPU;
+
+struct Sprite
+{
+	u8 yPos = 0;
+	u8 tileIndex = 0;
+	u8 attributes = 0;
+	u8 xPos = 0;
+};
+
+enum class SpriteEvalPhase
+{
+	Phase1,
+	Phase2,
+	Phase3,
+	Phase4
+};
 
 class PPU
 {
@@ -71,6 +88,14 @@ private:
 
 	void FetchBackgroundData();
 
+	void EvaluateSprites();
+
+	void FillSecondaryOAM();
+
+	void FetchSpriteData();
+
+	bool SpriteInRange(u8 yPos) const;
+
 	void UpdateV();
 
 	bool IgnoresWrites();
@@ -89,8 +114,8 @@ private:
 
 private:
 	Memory<0x800> m_Vram{};
-	Memory<0x100> m_Oam{};
 	Memory<0x20> m_Palette{};
+	Memory<0x100> m_Oam{};
 	Memory<0x20> m_SecondaryOam{};
 	std::unique_ptr<u8[]> m_Framebuffer = nullptr;
 
@@ -121,6 +146,11 @@ private:
 	u16 m_BGTileHighShift = 0;
 	u16 m_BGPaletteLowShift = 0;
 	u16 m_BGPaletteHighShift = 0;
+
+	// Sprite evaluation
+	u8 m_Sprite0NextStart = 0;
+	Memory<SCREEN_WIDTH> m_SpritePixelBuf{};
+	std::bitset<SCREEN_WIDTH> m_SpritePriorityBuf{};
 
 	u8 m_ReadBuf = 0;
 

@@ -2,6 +2,7 @@
 #include "Mapper.h"
 #include "CPU.h"
 
+static constexpr u8 CTRL_SPRITE_TILE_SELECT_SHIFT = 3;
 static constexpr u8 CTRL_BACKGROUND_TILE_SELECT_SHIFT = 4;
 
 static constexpr u8 CTRL_NAMETABLE_MASK = 0b11;
@@ -37,6 +38,8 @@ static constexpr u16 INTERNAL_NAMETABLE_X_MASK = 1 << 10;
 static constexpr u16 INTERNAL_NAMETABLE_Y_MASK = 1 << 11;
 static constexpr u16 INTERNAL_NAMETABLE_SELECT_MASK = 0b11 << 10;
 static constexpr u16 INTERNAL_FINE_Y_SCROLL_MASK = 0b111 << 12;
+
+static constexpr u8 SPRITE_ATTRIBUTE_PRIORITY_SHIFT = 5;
 
 static constexpr u8 SPRITE_ATTRIBUTE_PALETTE_MASK = 0b11;
 static constexpr u8 SPRITE_ATTRIBUTE_UNIMPLEMENTED_MASK = 0b111 << 2;
@@ -131,8 +134,8 @@ void PPU::Reset()
 {
 	// Memory
 	m_Vram.fill(0);
-	m_Oam.fill(0);
 	m_Palette.fill(0);
+	m_Oam.fill(0);
 	m_SecondaryOam.fill(0);
 	std::memset(m_Framebuffer.get(), 0, SCREEN_WIDTH * SCREEN_HEIGHT);
 
@@ -148,6 +151,10 @@ void PPU::Reset()
 	m_BGTileLowShift = m_BGTileHighShift = m_BGPaletteLowShift = m_BGPaletteHighShift = 0;
 
 	m_ReadBuf = m_Scanline = m_ScanlineCycle = m_FrameNumber = 0;
+
+	// Sprite evaluation
+	m_SpritePixelBuf.fill(0);
+	m_SpritePriorityBuf.reset();
 }
 
 void PPU::PrerenderCycle()
@@ -194,6 +201,8 @@ void PPU::VisibleCycle()
 
 	FetchBackgroundData();
 
+	EvaluateSprites();
+
 	ShiftRegisters();
 
 	UpdateV();
@@ -209,6 +218,8 @@ void PPU::SetPixel()
 	const usize y = m_Scanline;
 	const usize x = m_ScanlineCycle - 1;
 
+	u8 backgroundPixels = 0;
+
 	if (m_MaskReg & MASK_BACKGROUND_ENABLE_BIT)
 	{
 		const u8 fineX = m_X;
@@ -222,15 +233,33 @@ void PPU::SetPixel()
 			((m_BGPaletteLowShift >> bitIndex) & 1) |
 			((m_BGPaletteHighShift >> (bitIndex - 1)) & 0x2);
 
-		const u16 paletteAddr = (paletteNum << 2) | paletteOffset;
-		const u8 systemPaletteIndex = PaletteRead(paletteAddr);
+		backgroundPixels = (paletteNum << 2) | paletteOffset;
+	}
 
-		m_Framebuffer[y * SCREEN_WIDTH + x] = systemPaletteIndex;
+	u8 spritePixels = 0;
+	if (m_MaskReg & MASK_SPRITE_ENABLE_BIT)
+	{
+		spritePixels = m_SpritePixelBuf[x];
+	}
+
+	u8 paletteAddr = 0;
+	const bool opaqueSprite = spritePixels & 0b11;
+	const bool opaqueBackground = backgroundPixels & 0b11;
+	// both transparent, choose background
+	if (!opaqueSprite && !opaqueBackground)
+	{
+		paletteAddr = backgroundPixels;
+	}
+	else if (!opaqueBackground || (opaqueSprite && !m_SpritePriorityBuf[x]))
+	{
+		paletteAddr = (1 << 4) | spritePixels;
 	}
 	else
 	{
-		m_Framebuffer[y * SCREEN_WIDTH + x] = PaletteRead(0);
+		paletteAddr = backgroundPixels;
 	}
+
+	m_Framebuffer[y * SCREEN_WIDTH + x] = PaletteRead(paletteAddr);
 }
 
 void PPU::ShiftRegisters()
@@ -316,6 +345,159 @@ void PPU::FetchBackgroundData()
 	default:
 		break;
 	}
+}
+
+void PPU::EvaluateSprites()
+{
+	// TODO: check if this should still happen when sprite rendering disabled
+	if (!(m_MaskReg & MASK_SPRITE_ENABLE_BIT))
+	{
+		return;
+	}
+
+	if (m_ScanlineCycle == 1)
+	{
+		// technically each byte written should take 2 cycles, but it has no impact
+		// since secondary oam is never read from outside the ppu
+		m_SecondaryOam.fill(0xFF);
+	}
+	// TODO: Right now we're performing this all at once, but
+	// the real PPU perform this from cycles 65 to 256
+	// Might have an effect for certain ROMS, idk
+	else if (m_ScanlineCycle == 65)
+	{
+		FillSecondaryOAM();
+	}
+	else if (m_ScanlineCycle == 257)
+	{
+		FetchSpriteData();
+	}
+}
+
+void PPU::FillSecondaryOAM()
+{
+	u8 spritesFound = 0;
+	u8 n;
+	for (n = 0; n < 64; n++)
+	{
+		const u8 yPos = m_Oam[n * 4];
+		//m_SecondaryOam[spritesFound * 4] = yPos;
+		if (SpriteInRange(yPos))
+		{
+			if (n == 0)
+			{
+				m_Sprite0NextStart = true;
+			}
+			std::memcpy(
+				m_SecondaryOam.data() + spritesFound * 4,
+				m_Oam.data() + n * 4,
+				4);
+			spritesFound++;
+			if (spritesFound == 8)
+			{
+				break;
+			}
+		}
+	}
+	u8 m = 0;
+	for (n = n + 1; n < 64; n++)
+	{
+		const u8 yPos = m_Oam[n * 4 + m];
+		if (SpriteInRange(yPos))
+		{
+			m_StatusReg |= STATUS_SPRITE_OVERFLOW_BIT;
+			break;
+		}
+		m = (m + 1) % 4;
+	}
+}
+
+void PPU::FetchSpriteData()
+{
+	m_SpritePixelBuf.fill(0);
+	m_SpritePriorityBuf.reset();
+	for (u8 i = 0; i < m_SecondaryOam.size() && m_SecondaryOam[i] != 0xFF; i += 4)
+	{
+		const Sprite sprite = *reinterpret_cast<Sprite*>(&m_SecondaryOam[i]);
+		const bool largeSprite = m_CtrlReg & CTRL_SPRITE_SIZE_BIT;
+
+		// For 8x8 sprites
+		u8 tileNum = sprite.tileIndex;
+		u8 patternHalf = (m_CtrlReg >> CTRL_SPRITE_TILE_SELECT_SHIFT) & 1;
+		u8 fineY = m_Scanline - sprite.yPos;
+
+		const bool flipHorizontal = sprite.attributes & SPRITE_ATTRIBUTE_FLIP_HORIZONTAL_BIT;
+		const bool flipVertical = sprite.attributes & SPRITE_ATTRIBUTE_FLIP_VERTICAL_BIT;
+		if (flipVertical)
+		{
+			if (largeSprite)
+			{
+				fineY = 16 - fineY;
+			}
+			else
+			{
+				fineY = 8 - fineY;
+			}
+		}
+
+		// For 8x16 sprites
+		if (largeSprite)
+		{
+			tileNum = sprite.tileIndex >> 1;
+			patternHalf = sprite.tileIndex & 1;
+			// For 8x16 sprites, read the next tile after if fineY >= 8
+			if (fineY >= 8)
+			{
+				fineY -= 8;
+				tileNum++;
+			}
+		}
+		// TODO: check if fineY can ever be >= 8 still
+
+		const u16 addrLow =
+			fineY |
+			(tileNum << PATTERN_TABLE_TILE_SHIFT) |
+			(patternHalf << PATTERN_TABLE_HALF_SHIFT);
+
+		const u16 addrHigh =
+			addrLow | (1 << PATTERN_TABLE_BIT_PLANE_SHIFT);
+
+		const u8 patternLow = m_Mapper->PpuRead(addrLow);
+		const u8 patternHigh = m_Mapper->PpuRead(addrHigh);
+
+		const u8 paletteBits = sprite.attributes & SPRITE_ATTRIBUTE_PALETTE_MASK;
+		const u8 priority = (sprite.attributes >> SPRITE_ATTRIBUTE_PRIORITY_SHIFT) & 1;
+
+		for (u8 dx = 0; dx < 8; dx++)
+		{
+			const u8 fineX = flipHorizontal ? 7 - dx : dx;
+			const u8 bitIndex = 7 - fineX;
+			const u8 lineX = sprite.xPos + dx;
+			if (lineX >= SCREEN_WIDTH)
+			{
+				break;
+			}
+			const u8 color =
+				((patternLow >> bitIndex) & 1) |
+				(((patternHigh >> bitIndex) & 1) << 1) |
+				(paletteBits << 2);
+			// keep existing opaque pixels
+			if ((m_SpritePixelBuf[lineX] & 0b11) == 0)
+			{
+				m_SpritePixelBuf[lineX] = color;
+				m_SpritePriorityBuf[lineX] = priority;
+			}
+		}
+	}
+}
+
+bool PPU::SpriteInRange(u8 yPos) const
+{
+	// u16 to prevent wrapping around to make my life easier
+	const u16 spriteStart = yPos;
+	// determine height based on flag
+	const u16 spriteEnd = spriteStart + ((m_CtrlReg & CTRL_SPRITE_SIZE_BIT) ? 15 : 7);
+	return m_Scanline >= spriteStart && m_Scanline <= spriteEnd;
 }
 
 void PPU::UpdateV()
