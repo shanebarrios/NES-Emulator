@@ -32,7 +32,7 @@ Application::Application()
 		.renderWidth = 256, .renderHeight = 240
 	};
 	LoadPalette("C:\\Users\\shane\\source\\repos\\NES-Emulator\\Assets\\Palettes\\2C02G_wiki.pal");
-	m_Nes->LoadROM("C:\\Users\\shane\\source\\repos\\NES-Emulator\\pac_man.nes");
+	m_Nes->LoadROM("C:\\Users\\shane\\source\\repos\\NES-Emulator\\mario.nes");
 	m_Nes->Reset();
 
 	m_Window.Init(windowSpec);

@@ -416,6 +416,7 @@ u16 CPU::PeekStackWord() const
 	return low | (high << 8);
 }
 
+// TODO: fix side effects
 bool CPU::AddsCycle(AddrMode addrMode) const
 {
 	switch (addrMode)
@@ -432,7 +433,6 @@ bool CPU::AddsCycle(AddrMode addrMode) const
 		const u16 addr = base + m_Regs.Y;
 		return (base & 0xFF00) != (addr & 0xFF00);
 	}
-
 	case AddrMode::IndirectIndexed: 
 	{
 		const u8 arg = Read(m_Regs.PC + 1);

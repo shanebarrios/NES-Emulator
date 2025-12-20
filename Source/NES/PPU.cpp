@@ -56,6 +56,8 @@ static constexpr u16 POST_RENDER_START = 240;
 static constexpr u16 DOTS_PER_SCANLINE = 341;
 static constexpr u16 PRERENDER_LINE = 261;
 
+static constexpr u16 SPRITE0_NONE = 0xFFFF;
+
 // note: backdrop color can be overwritten if m_V points to palette RAM (3F00-3FFF)
 
 PPU::PPU() :
@@ -81,6 +83,7 @@ void PPU::PerformCycle()
 {
 	if (m_ScanlineCycle == 0)
 	{
+		m_Sprite0CurStart = m_Sprite0NextStart;
 		// idle cycle for dot 0, do nothing
 	}
 	else if (m_Scanline < POST_RENDER_START)
@@ -155,6 +158,8 @@ void PPU::Reset()
 	// Sprite evaluation
 	m_SpritePixelBuf.fill(0);
 	m_SpritePriorityBuf.reset();
+	m_Sprite0NextStart = SPRITE0_NONE;
+	m_Sprite0CurStart = SPRITE0_NONE;
 }
 
 void PPU::PrerenderCycle()
@@ -220,7 +225,8 @@ void PPU::SetPixel()
 
 	u8 backgroundPixels = 0;
 
-	if (m_MaskReg & MASK_BACKGROUND_ENABLE_BIT)
+	if ((m_MaskReg & MASK_BACKGROUND_ENABLE_BIT) && 
+		(x >= 8 || m_MaskReg & MASK_BACKGROUND_LEFT_COLUMN_ENABLE_BIT))
 	{
 		const u8 fineX = m_X;
 		const u16 bitIndex = 15 - fineX;
@@ -237,7 +243,8 @@ void PPU::SetPixel()
 	}
 
 	u8 spritePixels = 0;
-	if (m_MaskReg & MASK_SPRITE_ENABLE_BIT)
+	if ((m_MaskReg & MASK_SPRITE_ENABLE_BIT) && 
+		(x >= 8 || m_MaskReg & MASK_SPRITE_LEFT_COLUMN_ENABLE_BIT))
 	{
 		spritePixels = m_SpritePixelBuf[x];
 	}
@@ -245,10 +252,19 @@ void PPU::SetPixel()
 	u8 paletteAddr = 0;
 	const bool opaqueSprite = spritePixels & 0b11;
 	const bool opaqueBackground = backgroundPixels & 0b11;
-	// both transparent, choose background
+	// both transparent, choose backdrop
+	const u16 sprite0Start = m_Sprite0CurStart;
+	const u16 sprite0End = m_Sprite0CurStart + 7;
+
+	// Sprite 0 hit detection
+	if (opaqueSprite && opaqueBackground && x >= sprite0Start && x <= sprite0End && x != 255)
+	{
+		m_StatusReg |= STATUS_SPRITE0_HIT_BIT;
+	}
+
 	if (!opaqueSprite && !opaqueBackground)
 	{
-		paletteAddr = backgroundPixels;
+		paletteAddr = 0;
 	}
 	else if (!opaqueBackground || (opaqueSprite && !m_SpritePriorityBuf[x]))
 	{
@@ -378,6 +394,8 @@ void PPU::FillSecondaryOAM()
 {
 	u8 spritesFound = 0;
 	u8 n;
+	// sentinel value
+	m_Sprite0NextStart = SPRITE0_NONE;
 	for (n = 0; n < 64; n++)
 	{
 		const u8 yPos = m_Oam[n * 4];
@@ -386,7 +404,7 @@ void PPU::FillSecondaryOAM()
 		{
 			if (n == 0)
 			{
-				m_Sprite0NextStart = true;
+				m_Sprite0NextStart = m_Oam[n * 4 + 3];
 			}
 			std::memcpy(
 				m_SecondaryOam.data() + spritesFound * 4,
@@ -481,8 +499,8 @@ void PPU::FetchSpriteData()
 				((patternLow >> bitIndex) & 1) |
 				(((patternHigh >> bitIndex) & 1) << 1) |
 				(paletteBits << 2);
-			// keep existing opaque pixels
-			if ((m_SpritePixelBuf[lineX] & 0b11) == 0)
+			// take only first opaque pixels
+			if (!(m_SpritePixelBuf[lineX] & 0b11) && (color & 0b11))
 			{
 				m_SpritePixelBuf[lineX] = color;
 				m_SpritePriorityBuf[lineX] = priority;
@@ -493,6 +511,7 @@ void PPU::FetchSpriteData()
 
 bool PPU::SpriteInRange(u8 yPos) const
 {
+	if (yPos == 0) return false;
 	// u16 to prevent wrapping around to make my life easier
 	const u16 spriteStart = yPos;
 	// determine height based on flag
@@ -775,18 +794,22 @@ void PPU::NametableWrite(u16 offset, u8 val)
 	}
 }
 
+static constexpr u16 MirrorPalette(u16 offset)
+{
+	offset &= 0x1F;
+	if ((offset & 0x13) == 0x10)
+		offset &= ~0x10;
+	return offset;
+}
+
 u8 PPU::PaletteRead(u16 offset)
 {
-	return (offset & 0x3) ? m_Palette[offset] : m_Palette[0];
+	return m_Palette[MirrorPalette(offset)];
 }
 
 void PPU::PaletteWrite(u16 offset, u8 val)
 {
-	if (!(offset & 0x3))
-	{
-		offset = 0;
-	}
-	m_Palette[offset] = val;
+	m_Palette[MirrorPalette(offset)] = val;
 }
 
 bool PPU::IgnoresWrites()

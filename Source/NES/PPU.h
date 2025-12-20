@@ -148,7 +148,8 @@ private:
 	u16 m_BGPaletteHighShift = 0;
 
 	// Sprite evaluation
-	u8 m_Sprite0NextStart = 0;
+	u16 m_Sprite0NextStart = 0;
+	u16 m_Sprite0CurStart = 0;
 	Memory<SCREEN_WIDTH> m_SpritePixelBuf{};
 	std::bitset<SCREEN_WIDTH> m_SpritePriorityBuf{};
 
