@@ -4,6 +4,14 @@
 #include "Cartridge.h"
 #include <optional>
 
+#define MAPPER_BASE_PUBLIC_INTERFACE(name) \
+	name() : Mapper{} {} \
+	name(Cartridge* cartridge) : Mapper{ cartridge } {} \
+	u8 CpuRead(u16 addr) override; \
+	void CpuWrite(u16 addr, u8 data) override; \
+	u8 PpuRead(u16 addr) override; \
+	void PpuWrite(u16 addr, u8 data) override; \
+
 class Mapper
 {
 public:
@@ -36,15 +44,13 @@ protected:
 class NROM : public Mapper
 {
 public:
-	NROM() : Mapper{} {}
+	MAPPER_BASE_PUBLIC_INTERFACE(NROM)
+};
 
-	NROM(Cartridge* cartridge) : Mapper{ cartridge } {}
-
-	u8 CpuRead(u16 addr) override;
-
-	void CpuWrite(u16 addr, u8 data) override;
-
-	u8 PpuRead(u16 addr) override;
-
-	void PpuWrite(u16 addr, u8 data) override;
+class CNROM : public Mapper
+{
+public:
+	MAPPER_BASE_PUBLIC_INTERFACE(CNROM)
+private:
+	u8 m_ChrRomBank = 0;
 };

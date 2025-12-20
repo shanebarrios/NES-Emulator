@@ -91,60 +91,60 @@ void Cartridge::LoadFromFile(const std::filesystem::path& path)
 
 u8 Cartridge::ReadPrgRom(u16 offset) const
 {
-	if (offset >= m_PrgRomSize)
+	if (!m_PrgRom)
 	{
 		return 0;
 	}
 
-	return m_PrgRom[offset];
+	return m_PrgRom[offset & (m_PrgRomSize - 1)];
 }
 
 u8 Cartridge::ReadChrRom(u16 offset) const
 {
-	if (offset >= m_ChrRomSize)
+	if (!m_ChrRom)
 	{
 		return 0;
 	}
 
-	return m_ChrRom[offset];
+	return m_ChrRom[offset & (m_ChrRomSize - 1)];
 }
 
 u8 Cartridge::ReadPrgRam(u16 offset) const
 {
-	if (offset >= m_PrgRamSize)
+	if (!m_PrgRam)
 	{
 		return 0;
 	}
 
-	return m_PrgRam[offset];
+	return m_PrgRam[offset & (m_PrgRamSize - 1)];
 }
 
 u8 Cartridge::ReadChrRam(u16 offset) const
 {
-	if (!m_ChrRam || offset >= 0x2000)
+	if (!m_ChrRam)
 	{
 		return 0;
 	}
 
-	return m_ChrRam[offset];
+	return m_ChrRam[offset & 0x1FFF];
 }
 
 void Cartridge::WritePrgRam(u16 offset, u8 data)
 {
-	if (offset >= m_PrgRamSize)
+	if (!m_PrgRam)
 	{
 		return;
 	}
 
-	m_PrgRam[offset] = data;
+	m_PrgRam[offset & (m_PrgRamSize - 1)] = data;
 }
 
 void Cartridge::WriteChrRam(u16 offset, u8 data)
 {
-	if (!m_ChrRam || offset >= 0x2000)
+	if (!m_ChrRam)
 	{
 		return;
 	}
 
-	m_ChrRam[offset] = data;
+	m_ChrRam[offset & 0x1FFF] = data;
 }

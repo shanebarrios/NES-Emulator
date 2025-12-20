@@ -12,20 +12,10 @@ u8 NROM::CpuRead(u16 addr)
 	{
 		return m_Cartridge->ReadPrgRam(addr & 0x1FFF);
 	}
-	// First 16 KiB of PRG-ROM
-	else if (addr < 0xC000)
+	// PRG_ROM
+	else 
 	{
-		return m_Cartridge->ReadPrgRom(addr & 0x3FFF);
-	}
-	// Last 16 KiB of PRG-ROM
-	else if (addr <= 0xFFFF)
-	{
-		// Mirror if needed
-		const u16 adjustedAddr = m_Cartridge->GetPrgRomSize() == 0x4000 ?
-			addr & 0x3FFF :
-			addr & 0x7FFF;
-
-		return m_Cartridge->ReadPrgRom(adjustedAddr);
+		return m_Cartridge->ReadPrgRom(addr & 0x7FFF);
 	}
 	LOG_VERBOSE("Invalid CPU read from %hx", addr);
 	return 0;
@@ -62,7 +52,6 @@ u8 NROM::PpuRead(u16 addr)
 
 void NROM::PpuWrite(u16 addr, u8 data)
 {
-	// no writes allowed, do nothing
 	if (m_Cartridge->GetChrRomSize() == 0)
 	{
 		m_Cartridge->WriteChrRam(addr, data);

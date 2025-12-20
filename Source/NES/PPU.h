@@ -7,22 +7,6 @@
 class Cartridge;
 class CPU;
 
-struct Sprite
-{
-	u8 yPos = 0;
-	u8 tileIndex = 0;
-	u8 attributes = 0;
-	u8 xPos = 0;
-};
-
-struct SpritePixel
-{
-	u8 color : 4;
-	u8 priority : 1;
-	u8 sprite0Flag : 1;
-	u8 unused : 2;
-};
-
 class PPU
 {
 public:
@@ -113,6 +97,22 @@ private:
 	bool RenderingEnabled() const;
 
 private:
+	struct Sprite
+	{
+		u8 yPos = 0;
+		u8 tileIndex = 0;
+		u8 attributes = 0;
+		u8 xPos = 0;
+	};
+
+	struct SpritePixel
+	{
+		u8 color : 4;
+		u8 priority : 1;
+		u8 sprite0Flag : 1;
+		u8 unused : 2;
+	};
+
 	Memory<0x800> m_Vram{};
 	Memory<0x20> m_Palette{};
 	Memory<0x100> m_Oam{};

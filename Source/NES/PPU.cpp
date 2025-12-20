@@ -1,6 +1,7 @@
 #include "PPU.h"
 #include "Mapper.h"
 #include "CPU.h"
+#include "../Core/Logger.h"
 
 static constexpr u8 CTRL_SPRITE_TILE_SELECT_SHIFT = 3;
 static constexpr u8 CTRL_BACKGROUND_TILE_SELECT_SHIFT = 4;
@@ -254,10 +255,6 @@ void PPU::SetPixel()
 	// Sprite 0 hit detection
 	if (opaqueSprite && opaqueBackground && m_SpritePixelBuf[x].sprite0Flag)
 	{
-		if (m_Scanline != 0x1e)
-		{
-			__debugbreak();
-		}
 		m_StatusReg |= STATUS_SPRITE0_HIT_BIT;
 	}
 
@@ -469,7 +466,6 @@ void PPU::FetchSpriteData()
 				tileNum++;
 			}
 		}
-		// TODO: check if fineY can ever be >= 8 still
 
 		const u16 addrLow =
 			fineY |
@@ -632,6 +628,7 @@ u8 PPU::GetStatus()
 void PPU::SetOAMAddr(u8 data)
 {
 	m_OamAddr = data;
+
 }
 
 u8 PPU::GetOAMData()
@@ -668,7 +665,6 @@ void PPU::SetScroll(u8 data)
 		m_T = (m_T & ~INTERNAL_COARSE_Y_SCROLL_MASK) | ((data >> 3) << 5);
 		m_T = (m_T & ~INTERNAL_FINE_Y_SCROLL_MASK) | ((data & SCROLL_FINE_MASK) << 12);
 	}
-
 	m_W ^= 1;
 }
 
