@@ -450,11 +450,11 @@ void PPU::FetchSpriteData()
 		{
 			if (largeSprite)
 			{
-				fineY = 16 - fineY;
+				fineY = 15 - fineY;
 			}
 			else
 			{
-				fineY = 8 - fineY;
+				fineY = 7 - fineY;
 			}
 		}
 
