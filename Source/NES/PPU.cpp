@@ -83,7 +83,6 @@ void PPU::PerformCycle()
 {
 	if (m_ScanlineCycle == 0)
 	{
-		m_Sprite0CurStart = m_Sprite0NextStart;
 		// idle cycle for dot 0, do nothing
 	}
 	else if (m_Scanline < POST_RENDER_START)
@@ -156,10 +155,8 @@ void PPU::Reset()
 	m_ReadBuf = m_Scanline = m_ScanlineCycle = m_FrameNumber = 0;
 
 	// Sprite evaluation
-	m_SpritePixelBuf.fill(0);
-	m_SpritePriorityBuf.reset();
-	m_Sprite0NextStart = SPRITE0_NONE;
-	m_Sprite0CurStart = SPRITE0_NONE;
+	m_SpritePixelBuf.fill({});
+	m_Sprite0InRange = false;
 }
 
 void PPU::PrerenderCycle()
@@ -246,27 +243,31 @@ void PPU::SetPixel()
 	if ((m_MaskReg & MASK_SPRITE_ENABLE_BIT) && 
 		(x >= 8 || m_MaskReg & MASK_SPRITE_LEFT_COLUMN_ENABLE_BIT))
 	{
-		spritePixels = m_SpritePixelBuf[x];
+		spritePixels = m_SpritePixelBuf[x].color;
 	}
 
 	u8 paletteAddr = 0;
 	const bool opaqueSprite = spritePixels & 0b11;
 	const bool opaqueBackground = backgroundPixels & 0b11;
-	// both transparent, choose backdrop
-	const u16 sprite0Start = m_Sprite0CurStart;
-	const u16 sprite0End = m_Sprite0CurStart + 7;
+
 
 	// Sprite 0 hit detection
-	if (opaqueSprite && opaqueBackground && x >= sprite0Start && x <= sprite0End && x != 255)
+	if (opaqueSprite && opaqueBackground && m_SpritePixelBuf[x].sprite0Flag)
 	{
+		if (m_Scanline != 0x1e)
+		{
+			__debugbreak();
+		}
 		m_StatusReg |= STATUS_SPRITE0_HIT_BIT;
 	}
+
+	// both transparent, choose backdrop
 
 	if (!opaqueSprite && !opaqueBackground)
 	{
 		paletteAddr = 0;
 	}
-	else if (!opaqueBackground || (opaqueSprite && !m_SpritePriorityBuf[x]))
+	else if (!opaqueBackground || (opaqueSprite && !m_SpritePixelBuf[x].priority))
 	{
 		paletteAddr = (1 << 4) | spritePixels;
 	}
@@ -392,19 +393,17 @@ void PPU::EvaluateSprites()
  
 void PPU::FillSecondaryOAM()
 {
+	m_Sprite0InRange = false;
 	u8 spritesFound = 0;
 	u8 n;
-	// sentinel value
-	m_Sprite0NextStart = SPRITE0_NONE;
 	for (n = 0; n < 64; n++)
 	{
 		const u8 yPos = m_Oam[n * 4];
-		//m_SecondaryOam[spritesFound * 4] = yPos;
 		if (SpriteInRange(yPos))
 		{
 			if (n == 0)
 			{
-				m_Sprite0NextStart = m_Oam[n * 4 + 3];
+				m_Sprite0InRange = true;
 			}
 			std::memcpy(
 				m_SecondaryOam.data() + spritesFound * 4,
@@ -432,12 +431,12 @@ void PPU::FillSecondaryOAM()
 
 void PPU::FetchSpriteData()
 {
-	m_SpritePixelBuf.fill(0);
-	m_SpritePriorityBuf.reset();
+	m_SpritePixelBuf.fill({});
+	const bool largeSprite = m_CtrlReg & CTRL_SPRITE_SIZE_BIT;
+
 	for (u8 i = 0; i < m_SecondaryOam.size() && m_SecondaryOam[i] != 0xFF; i += 4)
 	{
 		const Sprite sprite = *reinterpret_cast<Sprite*>(&m_SecondaryOam[i]);
-		const bool largeSprite = m_CtrlReg & CTRL_SPRITE_SIZE_BIT;
 
 		// For 8x8 sprites
 		u8 tileNum = sprite.tileIndex;
@@ -500,10 +499,15 @@ void PPU::FetchSpriteData()
 				(((patternHigh >> bitIndex) & 1) << 1) |
 				(paletteBits << 2);
 			// take only first opaque pixels
-			if (!(m_SpritePixelBuf[lineX] & 0b11) && (color & 0b11))
+			const bool sprite0Flag = m_Sprite0InRange && i == 0;
+			if (!(m_SpritePixelBuf[lineX].color & 0b11) && (color & 0b11))
 			{
-				m_SpritePixelBuf[lineX] = color;
-				m_SpritePriorityBuf[lineX] = priority;
+				m_SpritePixelBuf[lineX] =
+				{
+					.color = color,
+					.priority = priority,
+					.sprite0Flag = sprite0Flag
+				};
 			}
 		}
 	}

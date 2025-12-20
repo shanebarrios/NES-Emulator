@@ -15,12 +15,12 @@ struct Sprite
 	u8 xPos = 0;
 };
 
-enum class SpriteEvalPhase
+struct SpritePixel
 {
-	Phase1,
-	Phase2,
-	Phase3,
-	Phase4
+	u8 color : 4;
+	u8 priority : 1;
+	u8 sprite0Flag : 1;
+	u8 unused : 2;
 };
 
 class PPU
@@ -148,10 +148,8 @@ private:
 	u16 m_BGPaletteHighShift = 0;
 
 	// Sprite evaluation
-	u16 m_Sprite0NextStart = 0;
-	u16 m_Sprite0CurStart = 0;
-	Memory<SCREEN_WIDTH> m_SpritePixelBuf{};
-	std::bitset<SCREEN_WIDTH> m_SpritePriorityBuf{};
+	bool m_Sprite0InRange = false;
+	Array<SpritePixel, SCREEN_WIDTH> m_SpritePixelBuf{};
 
 	u8 m_ReadBuf = 0;
 
