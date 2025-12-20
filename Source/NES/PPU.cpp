@@ -490,7 +490,7 @@ void PPU::FetchSpriteData()
 		{
 			const u8 fineX = flipHorizontal ? 7 - dx : dx;
 			const u8 bitIndex = 7 - fineX;
-			const u8 lineX = sprite.xPos + dx;
+			const u16 lineX = sprite.xPos + dx;
 			if (lineX >= SCREEN_WIDTH)
 			{
 				break;
