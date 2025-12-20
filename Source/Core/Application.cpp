@@ -28,7 +28,7 @@ Application::Application()
 	const WindowSpec windowSpec
 	{
 		.title = "NES Emulator",
-		.width = 1280, .height = 1200,
+		.width = 1280, .height = 960,
 		.renderWidth = 256, .renderHeight = 240
 	};
 	LoadPalette("C:\\Users\\shane\\source\\repos\\NES-Emulator\\Assets\\Palettes\\2C02G_wiki.pal");

@@ -198,6 +198,9 @@ private:
 private:
     HWND m_Hwnd = nullptr;
     BITMAPINFO m_BitmapInfo{};
+    HBITMAP m_BackBitmap{};
+    HDC m_BackDC{};
+
     WindowPixel* m_BitmapMemory = nullptr;
 
     std::bitset<256> m_Keys{};

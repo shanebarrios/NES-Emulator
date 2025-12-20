@@ -389,7 +389,7 @@ void PPU::EvaluateSprites()
 		FetchSpriteData();
 	}
 }
-
+ 
 void PPU::FillSecondaryOAM()
 {
 	u8 spritesFound = 0;
@@ -511,7 +511,6 @@ void PPU::FetchSpriteData()
 
 bool PPU::SpriteInRange(u8 yPos) const
 {
-	if (yPos == 0) return false;
 	// u16 to prevent wrapping around to make my life easier
 	const u16 spriteStart = yPos;
 	// determine height based on flag

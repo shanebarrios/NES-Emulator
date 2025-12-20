@@ -45,12 +45,19 @@ LRESULT Window::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 	case WM_SIZE:
 	{
-		RECT clientRect;
-		GetClientRect(m_Hwnd, &clientRect);
-		int width = clientRect.right - clientRect.left;
-		int height = clientRect.bottom - clientRect.top;
-		m_Width = width;
-		m_Height = height;
+		m_Width = LOWORD(lParam);
+		m_Height = HIWORD(lParam);
+
+		if (m_BackDC)
+		{
+			DeleteObject(m_BackBitmap);
+			DeleteDC(m_BackDC);
+		}
+		const HDC hdc = GetDC(m_Hwnd);
+		m_BackDC = CreateCompatibleDC(hdc);
+		m_BackBitmap = CreateCompatibleBitmap(hdc, m_Width, m_Height);
+		SelectObject(m_BackDC, m_BackBitmap);
+		ReleaseDC(m_Hwnd, hdc);
 
 		return 0;
 	}
@@ -219,16 +226,43 @@ void Window::Init(const WindowSpec& spec)
 
 	m_BitmapMemory = new WindowPixel[m_RenderWidth * m_RenderHeight];
 
+	const HDC hdc = GetDC(m_Hwnd);
+
+	m_BackDC = CreateCompatibleDC(hdc);
+	m_BackBitmap = CreateCompatibleBitmap(hdc, m_Width, m_Height);
+	SelectObject(m_BackDC, m_BackBitmap);
+
 	ShowWindow(m_Hwnd, SW_SHOWNORMAL);
 }
 
 void Window::Present()
 {
+	const double windowAspect = static_cast<double>(m_Width) / m_Height;
+	const double renderAspect = static_cast<double>(m_RenderWidth) / m_RenderHeight;
+
+	const double scale = windowAspect > renderAspect ?
+		static_cast<double>(m_Height) / m_RenderHeight :
+		static_cast<double>(m_Width) / m_RenderWidth;
+
+	const int dstWidth = static_cast<int>(m_RenderWidth * scale);
+	const int dstHeight = static_cast<int>(m_RenderHeight * scale);
+
+	const int destX = (m_Width - dstWidth) / 2;
+	const int destY = (m_Height - dstHeight) / 2;
+
 	const HDC hdc = GetDC(m_Hwnd);
-	StretchDIBits(hdc,
-		0, 0, m_Width, m_Height,
+
+	// draw background
+	const HBRUSH brush = CreateSolidBrush(RGB(0, 0, 0));
+	const RECT fullRect = { 0, 0, m_Width, m_Height };
+	FillRect(m_BackDC, &fullRect, brush);
+	DeleteObject(brush);
+
+	StretchDIBits(m_BackDC,
+		destX, destY, dstWidth, dstHeight,
 		0, 0, m_RenderWidth, m_RenderHeight,
 		m_BitmapMemory, &m_BitmapInfo, DIB_RGB_COLORS, SRCCOPY);
+	BitBlt(hdc, 0, 0, m_Width, m_Height, m_BackDC, 0, 0, SRCCOPY);
 	ReleaseDC(m_Hwnd, hdc);
 }
 
