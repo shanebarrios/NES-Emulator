@@ -272,11 +272,11 @@ void CPU::PerformCycle()
 	m_Branched = false;
 	const u8 opCode = Read(m_Regs.PC);
 	
-	m_CurrentInstruction = s_OpcodeLookup[opCode];
-	if (m_CurrentInstruction.instrType == InstrType::None)
+	m_CurInstr = s_OpcodeLookup[opCode];
+	if (m_CurInstr.instrType == InstrType::None)
 	{
 		// Treat as NOP if illegal op for now
-		m_CurrentInstruction = s_OpcodeLookup[0xEA];
+		m_CurInstr = s_OpcodeLookup[0xEA];
 	}
 
 	//PrintState();
@@ -284,7 +284,7 @@ void CPU::PerformCycle()
 	ExecuteInstruction();
 
 	if (!m_Branched)
-		m_Regs.PC += m_CurrentInstruction.byteCount;
+		m_Regs.PC += m_CurInstr.byteCount;
 }
 
 // TODO: fix side effects
@@ -292,20 +292,20 @@ void CPU::PrintState() const
 {
 	char buf[128];
 
-	const int instrBytes = m_CurrentInstruction.byteCount;
+	const int instrBytes = m_CurInstr.byteCount;
 
 	char addrBuf[32];
 
 	u16 operand = 0;
-	if (m_CurrentInstruction.byteCount == 2)
+	if (m_CurInstr.byteCount == 2)
 		operand = Read(m_Regs.PC + 1);
-	if (m_CurrentInstruction.byteCount == 3)
+	if (m_CurInstr.byteCount == 3)
 		operand = ReadWord(m_Regs.PC + 1);
 
-	const u16 addr = ResolveAddress(m_CurrentInstruction.addrMode);
+	const u16 addr = ResolveAddress(m_CurInstr.addrMode);
 
 	DebugUtils::AddrModeToStr(
-		m_CurrentInstruction.addrMode,
+		m_CurInstr.addrMode,
 		operand,
 		addr,
 		0,
@@ -318,7 +318,7 @@ void CPU::PrintState() const
 		Read(m_Regs.PC),
 		instrBytes > 1 ? Read(m_Regs.PC + 1) : 0,
 		instrBytes > 2 ? Read(m_Regs.PC + 2) : 0,
-		DebugUtils::InstrTypeToStr(m_CurrentInstruction.instrType),
+		DebugUtils::InstrTypeToStr(m_CurInstr.instrType),
 		addrBuf,
 		m_Regs.A, m_Regs.X, m_Regs.Y, m_StatusReg.GetRaw(), m_Regs.S,
 		m_TotalCycles
@@ -340,11 +340,11 @@ void CPU::PrintState() const
 
 void CPU::ExecuteInstruction()
 {
-	const InstructionFunc f = ResolveInstructionFunction(m_CurrentInstruction.instrType);
+	const InstructionFunc f = ResolveInstructionFunction(m_CurInstr.instrType);
 
-	const u8 addCycles = (this->*f)(m_CurrentInstruction.addrMode);
+	const u8 addCycles = (this->*f)(m_CurInstr.addrMode);
 
-	m_NextFetchCycle += addCycles + m_CurrentInstruction.cycleCount;
+	m_NextFetchCycle += addCycles + m_CurInstr.cycleCount;
 }
 
 u8 CPU::Read(u16 addr) const
@@ -451,7 +451,7 @@ u8 CPU::Branch(u16 addr)
 {
 	const u16 updated = addr;
 	u8 addCycles = 1;
-	if ((updated & 0xFF00) != ((m_Regs.PC + m_CurrentInstruction.byteCount) & 0xFF00))
+	if ((updated & 0xFF00) != ((m_Regs.PC + m_CurInstr.byteCount) & 0xFF00))
 		addCycles++;
 	m_Regs.PC = updated;
 	m_Branched = true;

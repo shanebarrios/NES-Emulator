@@ -57,6 +57,9 @@
     <ClCompile Include="Source\NES\Mappers\CNROM.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Source\NES\CPUNew.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\NES\CPUBus.h">
@@ -99,6 +102,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\NES\VirtualController.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\NES\CPUNew.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

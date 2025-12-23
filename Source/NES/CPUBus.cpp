@@ -35,21 +35,26 @@ void CPUBus::Attach(Mapper* mapper, PPU* ppu, u8* ram, VirtualController* contro
 
 u8 CPUBus::Read(u16 addr)
 {
+	u8 read = m_LastRead;
+
 	if (addr < 0x2000)
 	{
-		return m_Ram[addr & 0x7FF];
+		read = m_Ram[addr & 0x7FF];
 	}
 	else if (addr < 0x4000)
 	{
-		const u16 mirrored = 0x2000 | (addr & 0xF);
+		const u16 mirrored = 0x2000 | (addr & 0x7);
 		switch (mirrored)
 		{
 		case PPUSTATUS:
-			return m_Ppu->GetStatus();
+			read = m_Ppu->GetStatus();
+			break;
 		case OAMDATA:
-			return m_Ppu->GetOAMData();
+			read = m_Ppu->GetOAMData();
+			break;
 		case PPUDATA:
-			return m_Ppu->GetData();
+			read = m_Ppu->GetData();
+			break;
 		default:
 			break;
 			// open bus
@@ -62,7 +67,9 @@ u8 CPUBus::Read(u16 addr)
 		switch (addr)
 		{
 		case JOY1:
-			return m_Controller->ReadBit();
+			// upper bits are open bus
+			read = (m_LastRead & 0b11100000) | m_Controller->ReadBit();
+			break;
 		default:
 			break;
 			// open bus
@@ -70,12 +77,10 @@ u8 CPUBus::Read(u16 addr)
 	}
 	else
 	{
-		return m_Mapper->CpuRead(addr);
+		read = m_Mapper->CpuRead(addr);
 	}
-
-	LOG_VERBOSE("Invalid CPU read from %hx", addr);
-	return 0;
-
+	m_LastRead = read;
+	return read;
 }
 
 void CPUBus::Write(u16 addr, u8 val)

@@ -202,7 +202,7 @@ private:
 		u8 S;
 	} m_Regs{};
 
-	Instruction m_CurrentInstruction{};
+	Instruction m_CurInstr{};
 
 	bool m_Branched = false;
 

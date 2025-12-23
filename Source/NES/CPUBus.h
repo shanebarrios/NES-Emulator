@@ -24,4 +24,6 @@ private:
 	PPU* m_Ppu = nullptr;
 	u8* m_Ram = nullptr;
 	VirtualController* m_Controller = nullptr;
+
+	u8 m_LastRead = 0;
 };
