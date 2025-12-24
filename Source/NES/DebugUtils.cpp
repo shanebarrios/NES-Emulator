@@ -13,72 +13,72 @@ namespace DebugUtils
 		return { c1, c2 };
 	}
 
-	const char* InstrTypeToStr(InstrType instrType)
+	const char* OpToStr(Op op)
 	{
-		switch (instrType)
+		switch (op)
 		{
-		case InstrType::None: return nullptr;
-		case InstrType::ADC:  return "ADC";
-		case InstrType::AND:  return "AND";
-		case InstrType::ASL:  return "ASL";
-		case InstrType::BCC:  return "BCC";
-		case InstrType::BCS:  return "BCS";
-		case InstrType::BEQ:  return "BEQ";
-		case InstrType::BIT:  return "BIT";
-		case InstrType::BMI:  return "BMI";
-		case InstrType::BNE:  return "BNE";
-		case InstrType::BPL:  return "BPL";
-		case InstrType::BRK:  return "BRK";
-		case InstrType::BVC:  return "BVC";
-		case InstrType::BVS:  return "BVS";
-		case InstrType::CLC:  return "CLC";
-		case InstrType::CLD:  return "CLD";
-		case InstrType::CLI:  return "CLI";
-		case InstrType::CLV:  return "CLV";
-		case InstrType::CMP:  return "CMP";
-		case InstrType::CPX:  return "CPX";
-		case InstrType::CPY:  return "CPY";
-		case InstrType::DEC:  return "DEC";
-		case InstrType::DEX:  return "DEX";
-		case InstrType::DEY:  return "DEY";
-		case InstrType::EOR:  return "EOR";
-		case InstrType::INC:  return "INC";
-		case InstrType::INX:  return "INX";
-		case InstrType::INY:  return "INY";
-		case InstrType::JMP:  return "JMP";
-		case InstrType::JSR:  return "JSR";
-		case InstrType::LDA:  return "LDA";
-		case InstrType::LDX:  return "LDX";
-		case InstrType::LDY:  return "LDY";
-		case InstrType::LSR:  return "LSR";
-		case InstrType::NOP:  return "NOP";
-		case InstrType::ORA:  return "ORA";
-		case InstrType::PHA:  return "PHA";
-		case InstrType::PHP:  return "PHP";
-		case InstrType::PLA:  return "PLA";
-		case InstrType::PLP:  return "PLP";
-		case InstrType::ROL:  return "ROL";
-		case InstrType::ROR:  return "ROR";
-		case InstrType::RTI:  return "RTI";
-		case InstrType::RTS:  return "RTS";
-		case InstrType::SBC:  return "SBC";
-		case InstrType::SEC:  return "SEC";
-		case InstrType::SED:  return "SED";
-		case InstrType::SEI:  return "SEI";
-		case InstrType::STA:  return "STA";
-		case InstrType::STX:  return "STX";
-		case InstrType::STY:  return "STY";
-		case InstrType::TAX:  return "TAX";
-		case InstrType::TAY:  return "TAY";
-		case InstrType::TSX:  return "TSX";
-		case InstrType::TXA:  return "TXA";
-		case InstrType::TXS:  return "TXS";
-		case InstrType::TYA:  return "TYA";
+		case Op::None: return nullptr;
+		case Op::ADC:  return "ADC";
+		case Op::AND:  return "AND";
+		case Op::ASL:  return "ASL";
+		case Op::BCC:  return "BCC";
+		case Op::BCS:  return "BCS";
+		case Op::BEQ:  return "BEQ";
+		case Op::BIT:  return "BIT";
+		case Op::BMI:  return "BMI";
+		case Op::BNE:  return "BNE";
+		case Op::BPL:  return "BPL";
+		case Op::BRK:  return "BRK";
+		case Op::BVC:  return "BVC";
+		case Op::BVS:  return "BVS";
+		case Op::CLC:  return "CLC";
+		case Op::CLD:  return "CLD";
+		case Op::CLI:  return "CLI";
+		case Op::CLV:  return "CLV";
+		case Op::CMP:  return "CMP";
+		case Op::CPX:  return "CPX";
+		case Op::CPY:  return "CPY";
+		case Op::DEC:  return "DEC";
+		case Op::DEX:  return "DEX";
+		case Op::DEY:  return "DEY";
+		case Op::EOR:  return "EOR";
+		case Op::INC:  return "INC";
+		case Op::INX:  return "INX";
+		case Op::INY:  return "INY";
+		case Op::JMP:  return "JMP";
+		case Op::JSR:  return "JSR";
+		case Op::LDA:  return "LDA";
+		case Op::LDX:  return "LDX";
+		case Op::LDY:  return "LDY";
+		case Op::LSR:  return "LSR";
+		case Op::NOP:  return "NOP";
+		case Op::ORA:  return "ORA";
+		case Op::PHA:  return "PHA";
+		case Op::PHP:  return "PHP";
+		case Op::PLA:  return "PLA";
+		case Op::PLP:  return "PLP";
+		case Op::ROL:  return "ROL";
+		case Op::ROR:  return "ROR";
+		case Op::RTI:  return "RTI";
+		case Op::RTS:  return "RTS";
+		case Op::SBC:  return "SBC";
+		case Op::SEC:  return "SEC";
+		case Op::SED:  return "SED";
+		case Op::SEI:  return "SEI";
+		case Op::STA:  return "STA";
+		case Op::STX:  return "STX";
+		case Op::STY:  return "STY";
+		case Op::TAX:  return "TAX";
+		case Op::TAY:  return "TAY";
+		case Op::TSX:  return "TSX";
+		case Op::TXA:  return "TXA";
+		case Op::TXS:  return "TXS";
+		case Op::TYA:  return "TYA";
 		default: return nullptr;
 		}
 	}
 
-	void AddrModeToStr(AddrMode mode, u16 operand, u16 effectiveAddr, u8 val, char* buf, usize bufLen)
+	/*void AddrModeToStr(AddrMode mode, u16 operand, u16 effectiveAddr, u8 val, char* buf, usize bufLen)
 	{
 		switch (mode)
 		{
@@ -109,5 +109,5 @@ namespace DebugUtils
 		default:
 			buf[0] = '\0'; return;
 		}
-	}
+	}*/
 }

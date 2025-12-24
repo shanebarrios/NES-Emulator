@@ -21,7 +21,7 @@
     <ClCompile Include="Source\NES\Cartridge.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\NES\CPU.cpp">
+    <ClCompile Include="Source\NES\CPUOld.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source\NES\DebugUtils.cpp">
@@ -57,7 +57,7 @@
     <ClCompile Include="Source\NES\Mappers\CNROM.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\NES\CPUNew.cpp">
+    <ClCompile Include="Source\NES\CPU.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -68,7 +68,7 @@
     <ClInclude Include="Source\NES\Cartridge.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\NES\CPU.h">
+    <ClInclude Include="Source\NES\CPUOld.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\NES\DebugUtils.h">
@@ -104,7 +104,7 @@
     <ClInclude Include="Source\NES\VirtualController.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\NES\CPUNew.h">
+    <ClInclude Include="Source\NES\CPU.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

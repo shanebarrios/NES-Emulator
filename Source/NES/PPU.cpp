@@ -165,6 +165,7 @@ void PPU::PrerenderCycle()
 	if (m_ScanlineCycle == 1)
 	{
 		m_StatusReg &= ~(STATUS_VBLANK_BIT | STATUS_SPRITE0_HIT_BIT | STATUS_SPRITE_OVERFLOW_BIT);
+		m_Cpu->SetNMILine(false);
 	}
 
 	FetchBackgroundData();
@@ -193,7 +194,7 @@ void PPU::VBlankCycle()
 		m_StatusReg |= STATUS_VBLANK_BIT;
 		if (m_CtrlReg & CTRL_NMI_ENABLE_BIT)
 		{
-			m_Cpu->TriggerNMI();
+			m_Cpu->SetNMILine(true);
 		}
 	}
 }
@@ -604,7 +605,11 @@ void PPU::SetCtrl(u8 data)
 		(data & CTRL_NMI_ENABLE_BIT) &&
 		(m_StatusReg & STATUS_VBLANK_BIT))
 	{
-		m_Cpu->TriggerNMI();
+		m_Cpu->SetNMILine(true);
+	}
+	if (!(data & CTRL_NMI_ENABLE_BIT))
+	{
+		m_Cpu->SetNMILine(false);
 	}
 }
 
@@ -621,6 +626,7 @@ u8 PPU::GetStatus()
 	m_W = 0;
 	const u8 val = m_StatusReg;
 	m_StatusReg &= ~STATUS_VBLANK_BIT;
+	m_Cpu->SetNMILine(false);
 
 	return val;
 }

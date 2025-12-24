@@ -126,8 +126,8 @@
     <ClCompile Include="Source\Core\Logger.cpp" />
     <ClCompile Include="Source\NES\CPUBus.cpp" />
     <ClCompile Include="Source\NES\Cartridge.cpp" />
+    <ClCompile Include="Source\NES\CPUOld.cpp" />
     <ClCompile Include="Source\NES\CPU.cpp" />
-    <ClCompile Include="Source\NES\CPUNew.cpp" />
     <ClCompile Include="Source\NES\DebugUtils.cpp" />
     <ClCompile Include="Source\Main.cpp" />
     <ClCompile Include="Source\NES\Mappers\CNROM.cpp" />
@@ -142,10 +142,10 @@
     <ClInclude Include="Source\Core\Application.h" />
     <ClInclude Include="Source\Core\Common.h" />
     <ClInclude Include="Source\Core\Logger.h" />
-    <ClInclude Include="Source\NES\CPUNew.h" />
+    <ClInclude Include="Source\NES\CPU.h" />
     <ClInclude Include="Source\NES\CPUBus.h" />
     <ClInclude Include="Source\NES\Cartridge.h" />
-    <ClInclude Include="Source\NES\CPU.h" />
+    <ClInclude Include="Source\NES\CPUOld.h" />
     <ClInclude Include="Source\NES\DebugUtils.h" />
     <ClInclude Include="Source\NES\Mapper.h" />
     <ClInclude Include="Source\NES\PPU.h" />
