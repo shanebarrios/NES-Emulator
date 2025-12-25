@@ -262,11 +262,6 @@ void CPU::PerformCycle()
 			m_CurInstr = { .op = Op::None, .type = InstrType::Interrupt };
 		}
 
-
-		//PrintState();
-		//if (m_TotalCycles > 35000)
-		//	__debugbreak();
-
 		return;
 	}
 	StepInstruction();
@@ -714,11 +709,11 @@ void CPU::Relative()
 	case 3:
 	{
 		Read(m_PC);
-		const u16 sumLow = (m_PC & 0xFF) + m_Val;
-		m_PC = (m_PC & 0xFF00) | (sumLow & 0xFF);
-		// page not crossed
-		if (!(sumLow & 0x100))
+		const i16 offset = static_cast<i8>(m_Val);
+		const u16 newPC = m_PC + offset;
+		if ((m_PC & 0xFF00) == (newPC & 0xFF00))
 		{
+			m_PC = newPC;
 			DONE();
 		}
 		break;
@@ -726,10 +721,13 @@ void CPU::Relative()
 	// reached if page crossed
 	case 4:
 	{
-		Read(m_PC); 
-		const i16 signExtended = static_cast<i16>(static_cast<i8>(m_Val));
-		const u8 sumHigh = (m_PC >> 8) + (signExtended >> 8) + 1;
-		m_PC = (sumHigh << 8) | (m_PC & 0xFF);
+		const i16 offset = static_cast<i8>(m_Val);
+		const u16 newPC = m_PC + offset;
+
+		// read from wrong page first
+		Read((m_PC & 0xFF00) | (newPC & 0xFF)); 
+		
+		m_PC = newPC;
 		DONE();
 		break;
 	}
