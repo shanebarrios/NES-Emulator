@@ -92,10 +92,10 @@ private:
 
 	u8 PopStack();
 	void PushStack(u8 val);
-	u8 ReadStack() const;
+	u8 ReadStack();
 
-	u8 Read(u16 addr) const;
-	void Write(u16 addr, u8 val) const;
+	u8 Read(u16 addr);
+	void Write(u16 addr, u8 val);
 
 	void SetStatusBit(u8 mask, bool cond);
 	void SetZN(u8 val);
@@ -173,4 +173,5 @@ private:
 
 	Array<u8, 4> m_ReadBuf{};
 	u64 m_TotalCycles = 0;
+	u64 m_HaltEnd = 0;
 };

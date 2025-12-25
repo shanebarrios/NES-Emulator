@@ -222,16 +222,25 @@ CPU::CPU(CPUBus* bus) :
 {
 	m_P = STATUS_INTERRUPT_DISABLE | STATUS_UNUSED;
 	Reset();
+	//m_PC = 0xC000;
+	//m_S -= 3;
 	//m_S -= 3;
 	//m_PC = 0xC000;
 }
 
 void CPU::PerformCycle()
 {
-	m_InstrCycle++;
 	m_TotalCycles++;
-	if (m_InstrCycle == 1)
+	// hack for DMA, change this
+	if (m_HaltEnd != 0)
 	{
+		m_HaltEnd--;
+		return;
+	}
+
+	m_InstrCycle++;
+	if (m_InstrCycle == 1)
+	{	
 		// normal fetch
 		if (m_CurInterrupt == InterruptType::None)
 		{
@@ -252,7 +261,11 @@ void CPU::PerformCycle()
 		{
 			m_CurInstr = { .op = Op::None, .type = InstrType::Interrupt };
 		}
-		PrintState();
+
+
+		//PrintState();
+		//if (m_TotalCycles > 35000)
+		//	__debugbreak();
 
 		return;
 	}
@@ -270,6 +283,7 @@ void CPU::PerformCycle()
 		if (m_NMIPending)
 		{
 			m_CurInterrupt = InterruptType::NMI;
+			m_NMIPending = false;
 		}
 	}
 
@@ -405,10 +419,6 @@ void CPU::Interrupt()
 		break;
 	case 7: 
 		m_PC = (Read(InterruptVectorLoc(m_CurInterrupt) + 1) << 8) | m_ReadBuf[0]; 
-		if (m_CurInterrupt == InterruptType::NMI)
-		{
-			m_NMIPending = false;
-		}
 		DONE(); 
 		break;
 	}
@@ -863,19 +873,24 @@ u8 CPU::PopStack()
 	return Read(m_S + STACK_BEGIN);
 }
 
-u8 CPU::ReadStack() const
+u8 CPU::ReadStack()
 {
 	return Read(m_S + STACK_BEGIN);
 }
 
-u8 CPU::Read(u16 addr) const
+u8 CPU::Read(u16 addr)
 {
 	return m_Bus->Read(addr);
 }
 
-void CPU::Write(u16 addr, u8 val) const
+void CPU::Write(u16 addr, u8 val)
 {
 	m_Bus->Write(addr, val);
+	// quick hack, change this
+	if (addr == 0x2004)
+	{
+		m_HaltEnd = 512;
+	}
 }
 
 void CPU::SetStatusBit(u8 mask, bool cond)

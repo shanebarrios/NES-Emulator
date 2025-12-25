@@ -601,13 +601,12 @@ void PPU::SetCtrl(u8 data)
 	m_T = (m_T & ~INTERNAL_NAMETABLE_SELECT_MASK) 
 		| ((data & CTRL_NAMETABLE_MASK) << INTERNAL_NAMETABLE_SELECT_SHIFT);
 
-	if (!(old & CTRL_NMI_ENABLE_BIT) && 
-		(data & CTRL_NMI_ENABLE_BIT) &&
+	if ((data & CTRL_NMI_ENABLE_BIT) &&
 		(m_StatusReg & STATUS_VBLANK_BIT))
 	{
 		m_Cpu->SetNMILine(true);
 	}
-	if (!(data & CTRL_NMI_ENABLE_BIT))
+	else if (!(data & CTRL_NMI_ENABLE_BIT))
 	{
 		m_Cpu->SetNMILine(false);
 	}

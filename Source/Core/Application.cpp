@@ -31,8 +31,8 @@ Application::Application()
 		.width = 1280, .height = 960,
 		.renderWidth = 256, .renderHeight = 240
 	};
-	LoadPalette("C:\\Users\\shane_xziqakl\\source\\repos\\NES-Emulator\\Assets\\Palettes\\2C02G_wiki.pal");
-	m_Nes->LoadROM("C:\\Users\\shane_xziqakl\\source\\repos\\NES-Emulator\\donkey kong.nes");
+	LoadPalette("C:\\Users\\shane\\source\\repos\\NES-Emulator\\Assets\\Palettes\\2C02G_wiki.pal");
+	m_Nes->LoadROM("C:\\Users\\shane\\source\\repos\\NES-Emulator\\donkey kong.nes");
 	m_Nes->Reset();
 
 	m_Window.Init(windowSpec);
