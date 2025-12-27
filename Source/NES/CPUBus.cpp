@@ -128,13 +128,15 @@ void CPUBus::Write(u16 addr, u8 val)
 		{
 		case OAMDMA: 
 		{
-			Memory<256> buf;
-			const u16 base = val * 0x100;
-			for (usize offset = 0; offset < 256; offset++)
-			{
-				buf[offset] = Read(base + offset);
-			}
-			m_Ppu->DMA(buf);
+			//Memory<256> buf;
+			//const u16 base = val * 0x100;
+			//for (usize offset = 0; offset < 256; offset++)
+			//{
+			//	buf[offset] = Read(base + offset);
+			//}
+			//m_Ppu->DMA(buf);
+			
+			// handled by CPU now
 			return;
 		}
 		case JOY1:
@@ -152,4 +154,9 @@ void CPUBus::Write(u16 addr, u8 val)
 	}
 
 	LOG_VERBOSE("Invalid CPU write to %hx", addr);
+}
+
+void CPUBus::PPUDirectWrite(u8 val)
+{
+	m_Ppu->DirectOAMWrite(val);
 }

@@ -49,7 +49,7 @@ public:
 
 	void SetData(u8 data);
 
-	void DMA(const Memory<256>& mem);
+	void DirectOAMWrite(u8 data);
 
 private:
 	u8 Read(u16 addr);

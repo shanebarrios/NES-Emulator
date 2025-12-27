@@ -18,6 +18,8 @@ public:
 	u8 Read(u16 addr);
 
 	void Write(u16 addr, u8 val);
+	
+	void PPUDirectWrite(u8 val);
 
 private:
 	Mapper* m_Mapper = nullptr;

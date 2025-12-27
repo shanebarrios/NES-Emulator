@@ -441,6 +441,8 @@ void PPU::FetchSpriteData()
 		u8 patternHalf = (m_CtrlReg >> CTRL_SPRITE_TILE_SELECT_SHIFT) & 1;
 		u8 fineY = m_Scanline - sprite.yPos;
 
+		ASSERT(fineY <= 15);
+
 		const bool flipHorizontal = sprite.attributes & SPRITE_ATTRIBUTE_FLIP_HORIZONTAL_BIT;
 		const bool flipVertical = sprite.attributes & SPRITE_ATTRIBUTE_FLIP_VERTICAL_BIT;
 		if (flipVertical)
@@ -458,7 +460,7 @@ void PPU::FetchSpriteData()
 		// For 8x16 sprites
 		if (largeSprite)
 		{
-			tileNum = sprite.tileIndex >> 1;
+			//tileNum = sprite.tileIndex >> 1;
 			patternHalf = sprite.tileIndex & 1;
 			// For 8x16 sprites, read the next tile after if fineY >= 8
 			if (fineY >= 8)
@@ -514,6 +516,10 @@ bool PPU::SpriteInRange(u8 yPos) const
 {
 	// u16 to prevent wrapping around to make my life easier
 	const u16 spriteStart = yPos;
+	if (yPos >= SCREEN_HEIGHT - 1)
+	{
+		return false;
+	}
 	// determine height based on flag
 	const u16 spriteEnd = spriteStart + ((m_CtrlReg & CTRL_SPRITE_SIZE_BIT) ? 15 : 7);
 	return m_Scanline >= spriteStart && m_Scanline <= spriteEnd;
@@ -540,7 +546,7 @@ void PPU::UpdateV()
 	if (m_ScanlineCycle == 257)
 	{
 		// hori(v) = hori(t)
-		const u16 mask =
+		constexpr u16 mask =
 			INTERNAL_COARSE_X_SCROLL_MASK |
 			INTERNAL_NAMETABLE_X_MASK;
 		m_V &= ~mask;
@@ -728,11 +734,12 @@ void PPU::SetData(u8 data)
 	}
 }
 
-void PPU::DMA(const Memory<256>& mem)
+void PPU::DirectOAMWrite(u8 data)
 {
-	std::memcpy(m_Oam.data() + m_OamAddr, mem.data(), 256 - m_OamAddr);
-	std::memcpy(m_Oam.data(), mem.data() + (256 - m_OamAddr), m_OamAddr);
+	m_Oam[m_OamAddr] = data;
+	m_OamAddr++;
 }
+
 
 u8 PPU::Read(u16 addr)
 {

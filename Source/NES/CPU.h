@@ -6,6 +6,13 @@ enum class IndexType { X, Y };
 
 class CPU;
 
+enum class DMAStatus
+{
+	Inactive,
+	Scheduled,
+	Active
+};
+
 enum class Op
 {
 	None, 
@@ -90,6 +97,8 @@ private:
 
 	void PollInterrupts();
 
+	void DMAStep();
+
 	u8 PopStack();
 	void PushStack(u8 val);
 	u8 ReadStack();
@@ -171,7 +180,10 @@ private:
 
 	InterruptType m_CurInterrupt = InterruptType::None;
 
+	u8 m_DMAIndex = 0;
+	u8 m_DMAPage = 0;
+	DMAStatus m_DMAStatus = DMAStatus::Inactive;
+
 	Array<u8, 4> m_ReadBuf{};
 	u64 m_TotalCycles = 0;
-	u64 m_HaltEnd = 0;
 };

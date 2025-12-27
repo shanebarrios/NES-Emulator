@@ -222,25 +222,33 @@ CPU::CPU(CPUBus* bus) :
 {
 	m_P = STATUS_INTERRUPT_DISABLE | STATUS_UNUSED;
 	Reset();
-	//m_PC = 0xC000;
-	//m_S -= 3;
-	//m_S -= 3;
-	//m_PC = 0xC000;
 }
 
 void CPU::PerformCycle()
 {
 	m_TotalCycles++;
-	// hack for DMA, change this
-	if (m_HaltEnd != 0)
+
+	if (m_DMAStatus == DMAStatus::Active)
 	{
-		m_HaltEnd--;
+		DMAStep();
+		return;
+	}
+	// DMA
+	if (m_DMAStatus == DMAStatus::Scheduled && m_InstrCycle == 0)
+	{
+
+		// must begin reading on odd cycle, otherwise alignment cycle
+		if (m_TotalCycles % 2 == 0)
+		{
+			m_DMAStatus = DMAStatus::Active;
+		}
+		// stall cycle at beginning of DMA
 		return;
 	}
 
 	m_InstrCycle++;
 	if (m_InstrCycle == 1)
-	{	
+	{
 		// normal fetch
 		if (m_CurInterrupt == InterruptType::None)
 		{
@@ -293,6 +301,25 @@ void CPU::PollInterrupts()
 		m_NMIPending = true;
 	}
 	m_NMILinePrev = m_NMILine;
+}
+
+void CPU::DMAStep()
+{
+	// read on odd cycles
+	if (m_TotalCycles % 2 == 1)
+	{
+		m_Val = Read((m_DMAPage << 8) | m_DMAIndex);
+	}
+	// write on even cycles
+	else
+	{
+		if (m_DMAIndex == 0xFF)
+		{
+			m_DMAStatus = DMAStatus::Inactive;
+		}
+		m_Bus->PPUDirectWrite(m_Val);
+		m_DMAIndex++;
+	}
 }
 
 void CPU::Reset()
@@ -884,10 +911,10 @@ u8 CPU::Read(u16 addr)
 void CPU::Write(u16 addr, u8 val)
 {
 	m_Bus->Write(addr, val);
-	// quick hack, change this
-	if (addr == 0x2004)
+	if (addr == 0x4014)
 	{
-		m_HaltEnd = 512;
+		m_DMAPage = val;
+		m_DMAStatus = DMAStatus::Scheduled;
 	}
 }
 
