@@ -1,7 +1,7 @@
-#include "VirtualController.h"
+#include "HardwareController.h"
 #include "../Core/Logger.h"
 
-void VirtualController::SetButtonState(ControllerButton button, bool pressed)
+void HardwareController::SetButtonState(NESButton button, bool pressed)
 {
 	if (pressed)
 	{
@@ -17,7 +17,16 @@ void VirtualController::SetButtonState(ControllerButton button, bool pressed)
 	}
 }
 
-u8 VirtualController::ReadBit()
+void HardwareController::SetButtonsState(u8 state)
+{
+	m_ControllerState = state;
+	if (m_ShiftStrobe)
+	{
+		m_ShiftReg = m_ControllerState;
+	}
+}
+
+u8 HardwareController::ReadBit()
 {
 	const u8 ret = m_ShiftReg & 1;
 	if (!m_ShiftStrobe)
@@ -29,7 +38,7 @@ u8 VirtualController::ReadBit()
 	return ret;
 }
 
-void VirtualController::Write(bool bit)
+void HardwareController::Write(bool bit)
 {
 	m_ShiftStrobe = bit;
 	if (m_ShiftStrobe)

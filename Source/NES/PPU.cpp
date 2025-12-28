@@ -460,8 +460,8 @@ void PPU::FetchSpriteData()
 		// For 8x16 sprites
 		if (largeSprite)
 		{
-			//tileNum = sprite.tileIndex >> 1;
 			patternHalf = sprite.tileIndex & 1;
+			tileNum = sprite.tileIndex & 0xFE;
 			// For 8x16 sprites, read the next tile after if fineY >= 8
 			if (fineY >= 8)
 			{

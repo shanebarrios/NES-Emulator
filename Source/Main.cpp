@@ -1,6 +1,6 @@
 ﻿#include "Core/WindowsCommon.h"
 #include <stdio.h>
-#include "Core/Application.h"
+#include "Core/Emulator.h"
 
 HINSTANCE g_hInstance = nullptr;
 
@@ -21,8 +21,8 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
 static int Main()
 {
-	Application app{};
-	app.Run();
+	Emulator emulator {};
+	emulator.Run();
 
 	return 0;
 }

@@ -6,7 +6,7 @@
 #include "Cartridge.h"
 #include "SystemCommon.h"
 #include "PPU.h"
-#include "VirtualController.h"
+#include "HardwareController.h"
 
 #include <filesystem>
 #include <memory>
@@ -32,7 +32,7 @@ public:
 	// Cycles CPU once and PPU 3 times
 	void Update();
 
-	void SetButtonState(ControllerButton button, bool pressed);
+	void SetButtonsState(u8 state);
 
 private:
 	CPU m_Cpu{};
@@ -40,7 +40,7 @@ private:
 	PPU m_Ppu{};
 	CPUBus m_CpuBus{};
 	SystemRam m_SystemRam{};
-	VirtualController m_VirtualController{};
+	HardwareController m_Controller{};
 
 	std::unique_ptr<Mapper> m_Mapper{};
 };

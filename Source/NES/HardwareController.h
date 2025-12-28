@@ -2,7 +2,7 @@
 
 #include "../Core/Common.h"
 
-enum class ControllerButton
+enum class NESButton
 {
 	A,
 	B,
@@ -14,10 +14,12 @@ enum class ControllerButton
 	Right
 };
 
-class VirtualController
+class HardwareController
 {
 public:
-	void SetButtonState(ControllerButton button, bool pressed);
+	void SetButtonsState(u8 state);
+
+	void SetButtonState(NESButton button, bool pressed);
 
 	u8 ReadBit();
 

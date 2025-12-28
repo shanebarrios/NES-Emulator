@@ -25,7 +25,7 @@ void NES::LoadROM(const std::filesystem::path& path)
 
 	m_Mapper->Attach(&m_Cartridge);
 	m_Ppu.Attach(&m_Cpu, m_Mapper.get());
-	m_CpuBus.Attach(m_Mapper.get(), &m_Ppu, m_SystemRam.data(), &m_VirtualController);
+	m_CpuBus.Attach(m_Mapper.get(), &m_Ppu, m_SystemRam.data(), &m_Controller);
 	m_Cpu.Attach(&m_CpuBus);
 }
 
@@ -57,7 +57,7 @@ const u8* NES::GetFramebuffer() const
 	return m_Ppu.GetFramebuffer();
 }
 
-void NES::SetButtonState(ControllerButton button, bool pressed)
+void NES::SetButtonsState(u8 state)
 {
-	m_VirtualController.SetButtonState(button, pressed);
+	m_Controller.SetButtonsState(state);
 }

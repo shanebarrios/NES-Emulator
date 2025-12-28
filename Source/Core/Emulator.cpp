@@ -1,4 +1,4 @@
-#include "Application.h"
+#include "Emulator.h"
 #include "Logger.h"
 #include "../NES/PPU.h"
 
@@ -11,17 +11,7 @@ static void GlobalInit()
 	g_Logger.SetLogLevel(LogLevel::Info);
 }
 
-static void PollEvents()
-{
-	MSG msg;
-	while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE) > 0)
-	{
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
-	}
-}
-
-Application::Application()
+Emulator::Emulator()
 {
 	GlobalInit();
 	m_Nes = std::make_unique<NES>();
@@ -32,24 +22,22 @@ Application::Application()
 		.renderWidth = 256, .renderHeight = 240
 	};
 	LoadPalette("C:\\Users\\shane\\source\\repos\\NES-Emulator\\Assets\\Palettes\\2C02G_wiki.pal");
-	m_Nes->LoadROM("C:\\Users\\shane\\source\\repos\\NES-Emulator\\roms\\dig_dug2.nes");
+	m_Nes->LoadROM("C:\\Users\\shane\\source\\repos\\NES-Emulator\\roms\\mario.nes");
 	m_Nes->Reset();
 
 	m_Window.Init(windowSpec);
-	m_Window.SetKeyCallback([this](KeyEvent event){
-		OnKeyEvent(event);
-	});
-	m_Window.SetMouseMoveCallback([this](MouseMoveEvent event) {
-		OnMouseMoveEvent(event);
-	});
+	Input::SetFocus(m_Window);
+	Input::PollEvents();
+
+	m_Controller.SetDefaultControllerBindings();
 }
 
-Application::~Application()
+Emulator::~Emulator()
 {
 	
 }
 
-void Application::LoadPalette(const std::filesystem::path& path, int num)
+void Emulator::LoadPalette(const std::filesystem::path& path, int num)
 {
 	std::ifstream inf{ path, std::ios::binary };
 
@@ -76,7 +64,7 @@ void Application::LoadPalette(const std::filesystem::path& path, int num)
 	}
 }
 
-void Application::OnRender()
+void Emulator::OnRender()
 {
 	auto windowFramebuffer = m_Window.GetFramebuffer();
 	const u8* ppuFramebuffer = m_Nes->GetFramebuffer();
@@ -96,54 +84,13 @@ void Application::OnRender()
 	m_Window.Present();
 }
 
-void Application::OnKeyEvent(KeyEvent event)
+void Emulator::UpdateInput()
 {
-	ControllerButton button;
-
-	switch (event.code)
-	{
-	case KeyCode::Z:
-		button = ControllerButton::B;
-		break;
-	case KeyCode::X:
-		button = ControllerButton::A;
-		break;
-	case KeyCode::LeftArrow:
-		button = ControllerButton::Left;
-		break;
-	case KeyCode::UpArrow:
-		button = ControllerButton::Up;
-		break;
-	case KeyCode::RightArrow:
-		button = ControllerButton::Right;
-		break;
-	case KeyCode::DownArrow:
-		button = ControllerButton::Down;
-		break;
-	case KeyCode::RightShift:
-		button = ControllerButton::Select;
-		break;
-	case KeyCode::Enter:
-		button = ControllerButton::Start;
-		break;
-	default:
-		// No NES key mapping, dont handle the event
-		return;
-	}
-
-	const bool pressed = 
-		event.type == KeyEventType::Down || 
-		event.type == KeyEventType::Repeat;
-
-	m_Nes->SetButtonState(button, pressed);
+	Input::PollEvents();
+	m_Nes->SetButtonsState(m_Controller.ToHardwareState());
 }
 
-void Application::OnMouseMoveEvent(MouseMoveEvent event)
-{
-	// nothing for now
-}
-
-void Application::Run()
+void Emulator::Run()
 {
 	using namespace std::chrono;
 	using clock = high_resolution_clock;
@@ -161,7 +108,8 @@ void Application::Run()
 
 		nextFrame += nanoseconds(frameTimeNS);
 
-		PollEvents();
+		UpdateInput();
+
 		m_Nes->StepFrame();
 
 		OnRender();

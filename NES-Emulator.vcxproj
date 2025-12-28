@@ -94,6 +94,7 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
+      <AdditionalDependencies>Xinput.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -122,8 +123,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Source\Core\Application.cpp" />
+    <ClCompile Include="Source\Core\Emulator.cpp" />
+    <ClCompile Include="Source\Core\Input.cpp" />
     <ClCompile Include="Source\Core\Logger.cpp" />
+    <ClCompile Include="Source\Core\VirtualController.cpp" />
     <ClCompile Include="Source\NES\CPUBus.cpp" />
     <ClCompile Include="Source\NES\Cartridge.cpp" />
     <ClCompile Include="Source\NES\CPUOld.cpp" />
@@ -136,12 +139,14 @@
     <ClCompile Include="Source\NES\PPU.cpp" />
     <ClCompile Include="Source\NES\NES.cpp" />
     <ClCompile Include="Source\Core\Window.cpp" />
-    <ClCompile Include="Source\NES\VirtualController.cpp" />
+    <ClCompile Include="Source\NES\HardwareController.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Source\Core\Application.h" />
+    <ClInclude Include="Source\Core\Emulator.h" />
     <ClInclude Include="Source\Core\Common.h" />
+    <ClInclude Include="Source\Core\Input.h" />
     <ClInclude Include="Source\Core\Logger.h" />
+    <ClInclude Include="Source\Core\VirtualController.h" />
     <ClInclude Include="Source\NES\CPU.h" />
     <ClInclude Include="Source\NES\CPUBus.h" />
     <ClInclude Include="Source\NES\Cartridge.h" />
@@ -153,7 +158,10 @@
     <ClInclude Include="Source\Core\Window.h" />
     <ClInclude Include="Source\Core\WindowsCommon.h" />
     <ClInclude Include="Source\NES\SystemCommon.h" />
-    <ClInclude Include="Source\NES\VirtualController.h" />
+    <ClInclude Include="Source\NES\HardwareController.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Source\Core\Logger.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

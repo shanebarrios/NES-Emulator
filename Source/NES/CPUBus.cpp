@@ -2,7 +2,7 @@
 
 #include "Mapper.h"
 #include "PPU.h"
-#include "VirtualController.h"
+#include "HardwareController.h"
 #include "../Core/Logger.h"
 
 static constexpr u16 PPUCTRL = 0x2000;
@@ -17,7 +17,7 @@ static constexpr u16 OAMDMA = 0x4014;
 static constexpr u16 JOY1 = 0x4016;
 static constexpr u16 JOY2 = 0x4017;
 
-CPUBus::CPUBus(Mapper* mapper, PPU* ppu, u8* ram, VirtualController* controller) : 
+CPUBus::CPUBus(Mapper* mapper, PPU* ppu, u8* ram, HardwareController* controller) : 
 	m_Mapper{ mapper }, 
 	m_Ppu{ ppu }, 
 	m_Ram{ram },
@@ -25,7 +25,7 @@ CPUBus::CPUBus(Mapper* mapper, PPU* ppu, u8* ram, VirtualController* controller)
 {
 }
 
-void CPUBus::Attach(Mapper* mapper, PPU* ppu, u8* ram, VirtualController* controller)
+void CPUBus::Attach(Mapper* mapper, PPU* ppu, u8* ram, HardwareController* controller)
 {
 	m_Mapper = mapper;
 	m_Ppu = ppu;

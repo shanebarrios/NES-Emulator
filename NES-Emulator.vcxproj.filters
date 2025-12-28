@@ -48,16 +48,22 @@
     <ClCompile Include="Source\NES\Mappers\Mapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Core\Application.cpp">
+    <ClCompile Include="Source\Core\Emulator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\NES\VirtualController.cpp">
+    <ClCompile Include="Source\NES\HardwareController.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source\NES\Mappers\CNROM.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source\NES\CPU.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Input.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\VirtualController.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -98,14 +104,25 @@
     <ClInclude Include="Source\NES\SystemCommon.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Core\Application.h">
+    <ClInclude Include="Source\Core\Emulator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\NES\VirtualController.h">
+    <ClInclude Include="Source\NES\HardwareController.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\NES\CPU.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Core\Input.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\VirtualController.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Source\Core\Logger.inl">
+      <Filter>Header Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
