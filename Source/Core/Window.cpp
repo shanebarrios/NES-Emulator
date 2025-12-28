@@ -79,91 +79,6 @@ LRESULT Window::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 		EndPaint(m_Hwnd, &ps);
 		return 0;
 	}
-	case WM_KEYDOWN:
-	case WM_KEYUP:
-	{
-		const WORD keyFlags = HIWORD(lParam);
-		const WORD scanCode = LOBYTE(keyFlags);
-		const bool repeat = (keyFlags & KF_REPEAT) == KF_REPEAT;
-		const bool keyDown = (keyFlags & KF_UP) != KF_UP;
-		WORD vkCode = LOWORD(wParam);
-
-		// vkCode does not automatically distinguish these keys
-		switch (vkCode)
-		{
-		case VK_SHIFT:
-		case VK_CONTROL:
-		case VK_MENU:
-			vkCode = LOWORD(MapVirtualKeyW(scanCode, MAPVK_VSC_TO_VK_EX));
-			break;
-		}
-
-		const KeyCode code = static_cast<KeyCode>(vkCode);
-		KeyEventType type = keyDown ? KeyEventType::Down : KeyEventType::Up;
-		if (repeat && keyDown)
-		{
-			type = KeyEventType::Repeat;
-		}
-		m_Keys.set(static_cast<usize>(code), keyDown);
-
-		if (m_KeyCallback)
-		{
-			m_KeyCallback({ .type = type, .code = code,  });
-		}
-		return 0;
-	}
-	case WM_LBUTTONDOWN:
-	case WM_LBUTTONUP:
-	case WM_MBUTTONDOWN:
-	case WM_MBUTTONUP:
-	case WM_RBUTTONDOWN:
-	case WM_RBUTTONUP:
-	case WM_XBUTTONDOWN:
-	case WM_XBUTTONUP:
-	{
-		KeyCode code = KeyCode::Null;
-
-		if (uMsg == WM_LBUTTONDOWN || uMsg == WM_LBUTTONUP)
-		{
-			code = KeyCode::LeftMouse;
-		}
-		else if (uMsg == WM_MBUTTONDOWN || uMsg == WM_MBUTTONUP)
-		{
-			code = KeyCode::MiddleMouse;
-		}
-		else if (uMsg == WM_RBUTTONUP || uMsg == WM_RBUTTONDOWN)
-		{
-			code = KeyCode::RightMouse;
-		}
-
-		const bool keyDown = 
-			uMsg == WM_LBUTTONDOWN || 
-			uMsg == WM_MBUTTONDOWN || 
-			uMsg == WM_RBUTTONDOWN;
-		const KeyEventType type = keyDown ? KeyEventType::Down : KeyEventType::Up;
-
-		m_Keys.set(static_cast<usize>(code), keyDown);
-
-		if (m_KeyCallback)
-		{
-			m_KeyCallback({ .type = type, .code = code });
-		}
-
-		return 0;
-	}
-	case WM_MOUSEMOVE:
-	{
-		const int x = GET_X_LPARAM(lParam);
-		const int y = GET_Y_LPARAM(lParam);
-
-		if (m_MouseMoveCallback)
-		{
-			m_MouseMoveCallback({ .x = x, .y = y });
-		}
-
-		return 0;
-	}
-
 	default:
 		return DefWindowProc(m_Hwnd, uMsg, wParam, lParam);
 	}
@@ -264,24 +179,4 @@ void Window::Present()
 		m_BitmapMemory, &m_BitmapInfo, DIB_RGB_COLORS, SRCCOPY);
 	BitBlt(hdc, 0, 0, m_Width, m_Height, m_BackDC, 0, 0, SRCCOPY);
 	ReleaseDC(m_Hwnd, hdc);
-}
-
-void Window::SetKeyCallback(KeyCallback callback)
-{
-	m_KeyCallback = callback;
-}
-
-void Window::SetMouseMoveCallback(MouseMoveCallback callback)
-{
-	m_MouseMoveCallback = callback;
-}
-
-bool Window::IsKeyDown(KeyCode code) const
-{
-	return m_Keys[static_cast<usize>(code)];
-}
-
-std::pair<int, int> Window::GetMousePos() const
-{
-	return { m_MousePosX, m_MousePosY };
 }

@@ -9,6 +9,7 @@ static void GlobalInit()
 {
 	g_Logger.Init();
 	g_Logger.SetLogLevel(LogLevel::Info);
+	Input::Init();
 }
 
 Emulator::Emulator()
@@ -26,15 +27,14 @@ Emulator::Emulator()
 	m_Nes->Reset();
 
 	m_Window.Init(windowSpec);
-	Input::SetFocus(m_Window);
 	Input::PollEvents();
 
-	m_Controller.SetDefaultControllerBindings();
+	m_Controller.SetDefaultKeyboardBindings();
 }
 
 Emulator::~Emulator()
 {
-	
+	Input::Shutdown();
 }
 
 void Emulator::LoadPalette(const std::filesystem::path& path, int num)

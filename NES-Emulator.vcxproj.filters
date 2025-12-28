@@ -124,5 +124,6 @@
     <None Include="Source\Core\Logger.inl">
       <Filter>Header Files</Filter>
     </None>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

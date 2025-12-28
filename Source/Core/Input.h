@@ -12,8 +12,8 @@ enum class KeyCode
     RightMouse = 0x02,
     Cancel = 0x03,
     MiddleMouse = 0x04,
-    X1Mouse = 0x05,
-    X2Mouse = 0x06,
+    Mouse4 = 0x05,
+    Mouse5 = 0x06,
     Backspace = 0x08,
     Tab = 0x09,
     Clear = 0x0C,
@@ -177,7 +177,9 @@ struct MouseMoveEvent
 
 namespace Input
 {
-    void SetFocus(const Window& window);
+    void Init();
+
+    void Shutdown();
 
     void PollEvents();
 
