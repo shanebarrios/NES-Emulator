@@ -33,7 +33,6 @@ u8 MMC1::CpuRead(u16 addr)
 	else if (addr < 0xC000)
 	{
 		usize offset = addr & 0x3FFF;
-		// 
 		if (m_PrgRomBankMode != PrgRomBankMode::Fix0)
 		{
 			offset |= m_PrgRomBank << 14u;
@@ -104,9 +103,15 @@ void MMC1::CpuWrite(u16 addr, u8 data)
 
 u8 MMC1::PpuRead(u16 addr)
 {
-	if (addr < 0x2000)
+	if (addr < 0x1000)
 	{
-		return m_Cartridge->ReadChr(addr);
+		const u16 offset = (addr & 0xFFF) | (m_ChrBank0 << 12);
+		return m_Cartridge->ReadChr(offset);
+	}
+	else if (addr < 0x2000)
+	{
+		const u16 offset = (addr & 0xFFF) | (m_ChrBank1 << 12);
+		return m_Cartridge->ReadChr(offset);
 	}
 	LOG_VERBOSE("Invalid PPU read from %hx", addr);
 	return 0;
@@ -115,7 +120,19 @@ u8 MMC1::PpuRead(u16 addr)
 
 void MMC1::PpuWrite(u16 addr, u8 data)
 {
-	m_Cartridge->WriteChr(addr, data);
+	if (addr < 0x1000)
+	{
+		const u16 offset = (addr & 0xFFF) | (m_ChrBank0 << 12);
+		m_Cartridge->WriteChr(offset, data);
+		return;
+	}
+	else if (addr < 0x2000)
+	{
+		const u16 offset = (addr & 0xFFF) | (m_ChrBank1 << 12);
+		m_Cartridge->WriteChr(offset, data);
+		return;
+	}
+	LOG_VERBOSE("Invalid PPU write to %hx", addr);
 }
 
 void MMC1::UpdateBank(u16 addr)
@@ -154,11 +171,11 @@ void MMC1::UpdateChrBank0()
 	switch (m_ChrRomBankMode)
 	{
 	case ChrRomBankMode::SwitchBoth:
-		m_ChrRomBank0 = val & ~1u;
-		m_ChrRomBank1 = val | 1u;
+		m_ChrBank0 = val & ~1u;
+		m_ChrBank1 = val | 1u;
 		break;
 	case ChrRomBankMode::SwitchSeparate:
-		m_ChrRomBank0 = val;
+		m_ChrBank0 = val;
 		break;
 	}
 }
@@ -169,11 +186,10 @@ void MMC1::UpdateChrBank1()
 	switch (m_ChrRomBankMode)
 	{
 	case ChrRomBankMode::SwitchBoth:
-		m_ChrRomBank0 = val & ~1u;
-		m_ChrRomBank1 = val | 1u;
+		// do nothing
 		break;
 	case ChrRomBankMode::SwitchSeparate:
-		m_ChrRomBank1 = val;
+		m_ChrBank1 = val;
 		break;
 	}
 }

@@ -16,6 +16,9 @@ void NES::LoadROM(const std::filesystem::path& path)
 	case 0:
 		m_Mapper = std::make_unique<NROM>();
 		break;
+	case 1:
+		m_Mapper = std::make_unique<MMC1>();
+		break;
 	case 3:
 		m_Mapper = std::make_unique<CNROM>();
 		break;

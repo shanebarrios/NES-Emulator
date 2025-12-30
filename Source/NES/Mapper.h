@@ -89,11 +89,11 @@ private:
 
 	u8 m_ShiftReg = 0x10;
 
-	PrgRomBankMode m_PrgRomBankMode = PrgRomBankMode::SwitchBoth0;
+	PrgRomBankMode m_PrgRomBankMode = PrgRomBankMode::Fix1;
 	ChrRomBankMode m_ChrRomBankMode = ChrRomBankMode::SwitchBoth;
 
-	u8 m_ChrRomBank0 = 0;
-	u8 m_ChrRomBank1 = 0;
+	u8 m_ChrBank0 = 0;
+	u8 m_ChrBank1 = 0;
 	u8 m_PrgRomBank = 0;
 
 	bool m_PrgRamDisabled = false;

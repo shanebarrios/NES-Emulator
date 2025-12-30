@@ -62,7 +62,7 @@ void Cartridge::LoadFromFile(const std::filesystem::path& path)
 	m_PrgRamSize = header[8] * 0x2000;
 	if (m_HasPrgRam && m_PrgRamSize == 0)
 	{
-		m_PrgRamSize = 0x2000u;
+		m_PrgRamSize = 0x8000u;
 	}
 	if (m_HasPrgRam)
 	{
@@ -79,7 +79,7 @@ void Cartridge::LoadFromFile(const std::filesystem::path& path)
 
 	inf.read(reinterpret_cast<char*>(m_PrgRom.get()), m_PrgRomSize);
 
-	if (m_ChrSize > 0)
+	if (m_ChrRom)
 	{
 		inf.read(reinterpret_cast<char*>(m_ChrRom.get()), m_ChrSize);
 	}
