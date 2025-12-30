@@ -15,7 +15,8 @@ enum class DMAStatus
 
 enum class Op
 {
-	None, 
+	None,
+	// Legal
 	ADC, AND, ASL, BCC, BCS, BEQ, BIT,
 	BMI, BNE, BPL, BRK, BVC, BVS, CLC,
 	CLD, CLI, CLV, CMP, CPX, CPY, DEC, 
@@ -23,7 +24,11 @@ enum class Op
 	JSR, LDA, LDX, LDY, LSR, NOP, ORA,
 	PHA, PHP, PLA, PLP, ROL, ROR, RTI, 
 	RTS, SBC, SEC, SED, SEI, STA, STX,
-	STY, TAX, TAY, TSX, TXA, TXS, TYA
+	STY, TAX, TAY, TSX, TXA, TXS, TYA,
+	// Illegal
+	ALR, ANC, ANE, ARR, DCP, ISC, LAS,
+	LAX, LXA, RLA, RRA, SAX, SBX, SHA,
+	SHX, SHY, SLO, SRE, TAS
 };
 
 enum class InstrType
@@ -49,6 +54,7 @@ enum class InstrType
 	AbsoluteXRead,
 	AbsoluteYRead,
 	AbsoluteXReadModifyWrite,
+	AbsoluteYReadModifyWrite,
 	AbsoluteXWrite,
 	AbsoluteYWrite,
 	Relative,
@@ -133,7 +139,7 @@ private:
 	template <IndexType IT> void ZeroPageIndexedWrite();
 
 	template <IndexType IT> void AbsoluteIndexedRead();
-	void AbsoluteXReadModifyWrite();
+	template <IndexType IT> void AbsoluteIndexedReadModifyWrite();
 	template <IndexType IT> void AbsoluteIndexedWrite();
 
 	void Relative();

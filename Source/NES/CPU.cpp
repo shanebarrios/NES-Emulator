@@ -8,7 +8,7 @@ const Array<Instruction, 256> CPU::s_OpcodeLookup = [] {
 
 	lookup[0x69] = { Op::ADC, InstrType::Immediate };
 	lookup[0x65] = { Op::ADC, InstrType::ZeroPageRead };
-	lookup[0x75] = { Op::ADC, InstrType::ZeroPageXRead};
+	lookup[0x75] = { Op::ADC, InstrType::ZeroPageXRead };
 	lookup[0x6D] = { Op::ADC, InstrType::AbsoluteRead };
 	lookup[0x7D] = { Op::ADC, InstrType::AbsoluteXRead };
 	lookup[0x79] = { Op::ADC, InstrType::AbsoluteYRead };
@@ -20,7 +20,7 @@ const Array<Instruction, 256> CPU::s_OpcodeLookup = [] {
 	lookup[0x35] = { Op::AND, InstrType::ZeroPageXRead };
 	lookup[0x2D] = { Op::AND, InstrType::AbsoluteRead };
 	lookup[0x3D] = { Op::AND, InstrType::AbsoluteXRead };
-	lookup[0x39] = { Op::AND, InstrType::AbsoluteYRead};
+	lookup[0x39] = { Op::AND, InstrType::AbsoluteYRead };
 	lookup[0x21] = { Op::AND, InstrType::IndexedIndirectRead };
 	lookup[0x31] = { Op::AND, InstrType::IndirectIndexedRead };
 
@@ -119,7 +119,7 @@ const Array<Instruction, 256> CPU::s_OpcodeLookup = [] {
 	lookup[0xAC] = { Op::LDY, InstrType::AbsoluteRead };
 	lookup[0xBC] = { Op::LDY, InstrType::AbsoluteXRead };
 
-	lookup[0x4A] = { Op::LSR, InstrType::Accumulator};
+	lookup[0x4A] = { Op::LSR, InstrType::Accumulator };
 	lookup[0x46] = { Op::LSR, InstrType::ZeroPageReadModifyWrite };
 	lookup[0x56] = { Op::LSR, InstrType::ZeroPageXReadModifyWrite };
 	lookup[0x4E] = { Op::LSR, InstrType::AbsoluteReadModifyWrite };
@@ -156,7 +156,7 @@ const Array<Instruction, 256> CPU::s_OpcodeLookup = [] {
 	lookup[0x40] = { Op::RTI, InstrType::RTI };
 	lookup[0x60] = { Op::RTS, InstrType::RTS };
 
-	lookup[0xE9] = { Op::SBC, InstrType::Immediate };
+	lookup[0xE9] = lookup[0xEB] = { Op::SBC, InstrType::Immediate };
 	lookup[0xE5] = { Op::SBC, InstrType::ZeroPageRead };
 	lookup[0xF5] = { Op::SBC, InstrType::ZeroPageXRead };
 	lookup[0xED] = { Op::SBC, InstrType::AbsoluteRead };
@@ -192,6 +192,107 @@ const Array<Instruction, 256> CPU::s_OpcodeLookup = [] {
 	lookup[0x9A] = { Op::TXS, InstrType::Implied };
 	lookup[0x98] = { Op::TYA, InstrType::Implied };
 
+	// illegal ops
+	lookup[0x4B] = { Op::ALR, InstrType::Immediate };
+
+	lookup[0x0B] = lookup[0x2B] = { Op::ANC, InstrType::Immediate };
+
+	lookup[0x8B] = { Op::ANE, InstrType::Immediate };
+
+	lookup[0x6B] = { Op::ARR, InstrType::Immediate };
+
+	lookup[0xC7] = { Op::DCP, InstrType::ZeroPageReadModifyWrite };
+	lookup[0xD7] = { Op::DCP, InstrType::ZeroPageXReadModifyWrite };
+	lookup[0xCF] = { Op::DCP, InstrType::AbsoluteReadModifyWrite };
+	lookup[0xDF] = { Op::DCP, InstrType::AbsoluteXReadModifyWrite };
+	lookup[0xDB] = { Op::DCP, InstrType::AbsoluteYReadModifyWrite };
+	lookup[0xC3] = { Op::DCP, InstrType::IndexedIndirectReadModifyWrite };
+	lookup[0xD3] = { Op::DCP, InstrType::IndirectIndexedReadModifyWrite };
+
+	lookup[0xE7] = { Op::ISC, InstrType::ZeroPageReadModifyWrite };
+	lookup[0xF7] = { Op::ISC, InstrType::ZeroPageXReadModifyWrite };
+	lookup[0xEF] = { Op::ISC, InstrType::AbsoluteReadModifyWrite };
+	lookup[0xFF] = { Op::ISC, InstrType::AbsoluteXReadModifyWrite };
+	lookup[0xFB] = { Op::ISC, InstrType::AbsoluteYReadModifyWrite };
+	lookup[0xE3] = { Op::ISC, InstrType::IndexedIndirectReadModifyWrite };
+	lookup[0xF3] = { Op::ISC, InstrType::IndirectIndexedReadModifyWrite };
+
+	lookup[0xBB] = { Op::LAS, InstrType::AbsoluteYRead };
+	
+	lookup[0xA7] = { Op::LAX, InstrType::ZeroPageRead };
+	lookup[0xB7] = { Op::LAX, InstrType::ZeroPageYRead };
+	lookup[0xAF] = { Op::LAX, InstrType::AbsoluteRead };
+	lookup[0xBF] = { Op::LAX, InstrType::AbsoluteYRead };
+	lookup[0xA3] = { Op::LAX, InstrType::IndexedIndirectRead };
+	lookup[0xB3] = { Op::LAX, InstrType::IndirectIndexedRead };
+
+	lookup[0xAB] = { Op::LXA, InstrType::Immediate };
+
+	lookup[0x27] = { Op::RLA, InstrType::ZeroPageReadModifyWrite };
+	lookup[0x37] = { Op::RLA, InstrType::ZeroPageXReadModifyWrite };
+	lookup[0x2F] = { Op::RLA, InstrType::AbsoluteReadModifyWrite };
+	lookup[0x3F] = { Op::RLA, InstrType::AbsoluteXReadModifyWrite };
+	lookup[0x3B] = { Op::RLA, InstrType::AbsoluteYReadModifyWrite };
+	lookup[0x23] = { Op::RLA, InstrType::IndexedIndirectReadModifyWrite };
+	lookup[0x33] = { Op::RLA, InstrType::IndirectIndexedReadModifyWrite };
+
+	lookup[0x67] = { Op::RRA, InstrType::ZeroPageReadModifyWrite };
+	lookup[0x77] = { Op::RRA, InstrType::ZeroPageXReadModifyWrite };
+	lookup[0x6F] = { Op::RRA, InstrType::AbsoluteReadModifyWrite };
+	lookup[0x7F] = { Op::RRA, InstrType::AbsoluteXReadModifyWrite };
+	lookup[0x7B] = { Op::RRA, InstrType::AbsoluteYReadModifyWrite };
+	lookup[0x63] = { Op::RRA, InstrType::IndexedIndirectReadModifyWrite };
+	lookup[0x73] = { Op::RRA, InstrType::IndirectIndexedReadModifyWrite };
+
+	lookup[0x87] = { Op::SAX, InstrType::ZeroPageWrite };
+	lookup[0x97] = { Op::SAX, InstrType::ZeroPageYWrite };
+	lookup[0x8F] = { Op::SAX, InstrType::AbsoluteWrite };
+	lookup[0x83] = { Op::SAX, InstrType::IndexedIndirectWrite };
+
+	lookup[0xCB] = { Op::SBX, InstrType::Immediate };
+
+	lookup[0x9F] = { Op::SHA, InstrType::AbsoluteYWrite };
+	lookup[0x93] = { Op::SHA, InstrType::IndirectIndexedWrite };
+
+	lookup[0x9E] = { Op::SHX, InstrType::AbsoluteYWrite };
+
+	lookup[0x9C] = { Op::SHY, InstrType::AbsoluteXWrite };
+
+	lookup[0x07] = { Op::SLO, InstrType::ZeroPageReadModifyWrite };
+	lookup[0x17] = { Op::SLO, InstrType::ZeroPageXReadModifyWrite };
+	lookup[0x0F] = { Op::SLO, InstrType::AbsoluteReadModifyWrite };
+	lookup[0x1F] = { Op::SLO, InstrType::AbsoluteXReadModifyWrite };
+	lookup[0x1B] = { Op::SLO, InstrType::AbsoluteYReadModifyWrite };
+	lookup[0x03] = { Op::SLO, InstrType::IndexedIndirectReadModifyWrite };
+	lookup[0x13] = { Op::SLO, InstrType::IndirectIndexedReadModifyWrite };
+
+	lookup[0x47] = { Op::SRE, InstrType::ZeroPageReadModifyWrite };
+	lookup[0x57] = { Op::SRE, InstrType::ZeroPageXReadModifyWrite };
+	lookup[0x4F] = { Op::SRE, InstrType::AbsoluteReadModifyWrite };
+	lookup[0x5F] = { Op::SRE, InstrType::AbsoluteXReadModifyWrite };
+	lookup[0x5B] = { Op::SRE, InstrType::AbsoluteYReadModifyWrite };
+	lookup[0x43] = { Op::SRE, InstrType::IndexedIndirectReadModifyWrite };
+	lookup[0x53] = { Op::SRE, InstrType::IndirectIndexedReadModifyWrite };
+
+	lookup[0x9B] = { Op::TAS, InstrType::AbsoluteYWrite };
+
+	lookup[0x1A] = lookup[0x3A] = lookup[0x5A] = lookup[0x7A] = lookup[0xDA] = lookup[0xFA] =
+	{ Op::NOP, InstrType::Implied };
+
+	lookup[0x80] = lookup[0x82] = lookup[0x89] = lookup[0xC2] = lookup[0xE2] =
+	{ Op::NOP, InstrType::Immediate };
+
+	lookup[0x04] = lookup[0x44] = lookup[0x64] =
+	{ Op::NOP, InstrType::ZeroPageRead };
+
+	lookup[0x14] = lookup[0x34] = lookup[0x54] = lookup[0x74] = lookup[0xD4] = lookup[0xF4] =
+	{ Op::NOP, InstrType::ZeroPageXRead };
+
+	lookup[0x0C] = { Op::NOP, InstrType::AbsoluteRead };
+
+	lookup[0x1C] = lookup[0x3C] = lookup[0x5C] = lookup[0x7C] = lookup[0xDC] = lookup[0xFC] =
+	{ Op::NOP, InstrType::AbsoluteXRead };
+	
 	return lookup;
 }();
 
@@ -372,7 +473,8 @@ void CPU::StepInstruction()
 	case InstrType::ZeroPageYWrite: ZeroPageIndexedWrite<IndexType::Y>(); break;
 	case InstrType::AbsoluteXRead: AbsoluteIndexedRead<IndexType::X>(); break;
 	case InstrType::AbsoluteYRead: AbsoluteIndexedRead<IndexType::Y>(); break;
-	case InstrType::AbsoluteXReadModifyWrite: AbsoluteXReadModifyWrite(); break;
+	case InstrType::AbsoluteXReadModifyWrite: AbsoluteIndexedReadModifyWrite<IndexType::X>(); break;
+	case InstrType::AbsoluteYReadModifyWrite: AbsoluteIndexedReadModifyWrite<IndexType::Y>(); break;
 	case InstrType::AbsoluteXWrite: AbsoluteIndexedWrite<IndexType::X>(); break;
 	case InstrType::AbsoluteYWrite: AbsoluteIndexedWrite<IndexType::Y>(); break;
 	case InstrType::Relative: Relative(); break;
@@ -684,14 +786,15 @@ void CPU::AbsoluteIndexedRead()
 	}
 }
 
-void CPU::AbsoluteXReadModifyWrite()
+template <IndexType IT>
+void CPU::AbsoluteIndexedReadModifyWrite()
 {
 	switch (m_InstrCycle)
 	{
 	case 2: m_Addr = Read(m_PC++); break;
 	case 3:
 	{
-		const u16 sumLow = m_Addr + m_X;
+		const u16 sumLow = m_Addr + (IT == IndexType::X ? m_X : m_Y);
 		m_Addr = (Read(m_PC++) << 8) | (sumLow & 0xFF);
 		m_Carry = sumLow >> 8;
 		break;
@@ -932,7 +1035,8 @@ void CPU::SetZN(u8 val)
 void CPU::ExecuteOp()
 {
 	u8 result, tmp;
-	u16 result16;
+	u16 result16, tmp16;
+	constexpr u8 CONST = 0xFF;
 	switch (m_CurInstr.op)
 	{
 	case Op::ADC:
@@ -1122,6 +1226,110 @@ void CPU::ExecuteOp()
 		SetZN(m_A);
 		break;
 	case Op::NOP:
+		break;
+	case Op::ALR:
+		m_A &= m_Val;
+		SetStatusBit(STATUS_CARRY, m_A & 0x1);
+		m_A >>= 1;
+		SetStatusBit(STATUS_ZERO, m_A == 0);
+		m_P &= ~STATUS_NEGATIVE;
+		break;
+	// Illegal ops
+	case Op::ANC:
+		m_A &= m_Val;
+		SetStatusBit(STATUS_CARRY, m_A & 0x80);
+		SetZN(m_A);
+		break;
+	case Op::ANE: 
+		m_A = (m_A | CONST) & m_X & m_Val;
+		SetZN(m_A);
+		break;
+	case Op::ARR:
+		// no idea if this is correct
+		m_A = ((m_A & m_Val) >> 1) | ((m_P & STATUS_CARRY) ? 0x80 : 0x0);
+		SetStatusBit(STATUS_CARRY, m_A & 0x40);
+		SetStatusBit(STATUS_OVERFLOW, ((m_A >> 6) ^ (m_A >> 5)) & 1); // wtf
+		SetZN(m_A);
+		break;
+	case Op::DCP:
+		m_Val--;
+		SetStatusBit(STATUS_CARRY, m_A >= m_Val);
+		SetStatusBit(STATUS_ZERO, m_A == m_Val);
+		SetStatusBit(STATUS_NEGATIVE, (m_A - m_Val) & 0x80);
+		break;
+	case Op::ISC:
+		m_Val++;
+		tmp = ~m_Val;
+		result16 = m_A + tmp + ((m_P & STATUS_CARRY) ? 1 : 0);
+		SetStatusBit(STATUS_CARRY, result16 > 0xFF);
+		SetStatusBit(STATUS_ZERO, (result16 & 0xFF) == 0);
+		SetStatusBit(STATUS_OVERFLOW, (result16 ^ m_A) & (result16 ^ tmp) & 0x80);
+		SetStatusBit(STATUS_NEGATIVE, result16 & 0x80);
+		m_A = result16 & 0xFF;
+		break;
+	case Op::LAS:
+		m_A = m_X = m_S = m_Val & m_S;
+		SetZN(m_A);
+		break;
+	case Op::LAX:
+		m_A = m_X = m_Val;
+		SetZN(m_A);
+		break;
+	case Op::LXA:
+		m_A = m_X = (m_A | CONST) & m_Val;
+		SetZN(m_A);
+		break;
+	case Op::RLA:
+		result = (m_Val << 1) | ((m_P & STATUS_CARRY) ? 1 : 0);
+		m_A = m_A & result;
+		SetStatusBit(STATUS_CARRY, m_Val & 0x80);
+		SetZN(m_A);
+		m_Val = result;
+		break;
+	case Op::RRA:
+		result = (m_Val >> 1) | ((m_P & STATUS_CARRY) ? 0x80 : 0);
+		result16 = m_A + result + ((m_Val & 1) ? 1 : 0);
+		SetStatusBit(STATUS_CARRY, result16 > 0xFF);
+		SetStatusBit(STATUS_ZERO, (result16 & 0xFF) == 0);
+		SetStatusBit(STATUS_OVERFLOW, (result16 ^ m_A) & (result16 ^ result) & 0x80);
+		SetStatusBit(STATUS_NEGATIVE, result16 & 0x80);
+		m_A = result16 & 0xFF;
+		m_Val = result;
+		break;
+	case Op::SAX:
+		m_Val = m_A & m_X;
+		break;
+	case Op::SBX:
+		result = (m_A & m_X) + ~m_Val + 1;
+		SetStatusBit(STATUS_CARRY, (m_A & m_X) >= m_Val); // not sure if carry flag is correct
+		SetStatusBit(STATUS_ZERO, m_X == 0);
+		SetStatusBit(STATUS_NEGATIVE, m_X & 0x80);
+		m_X = result;
+		break;
+	case Op::SHA:
+		m_Val = m_A & m_X & ((m_Addr >> 8) + 1);
+		break;
+	case Op::SHX:
+		m_Val = m_X & ((m_Addr >> 8) + 1);
+		break;
+	case Op::SHY:
+		m_Val = m_Y & ((m_Addr >> 8) + 1);
+		break;
+	case Op::SLO:
+		SetStatusBit(STATUS_CARRY, m_Val & 0x80);
+		m_Val <<= 1;
+		m_A |= m_Val;
+		SetZN(m_A);
+		break;
+	case Op::SRE:
+		SetStatusBit(STATUS_CARRY, m_Val & 0x1);
+		m_Val >>= 1;
+		m_A ^= m_Val;
+		SetZN(m_A);
+		break;
+	case Op::TAS:
+		m_S = m_A & m_X;
+		m_Val = m_A & m_X & ((m_Addr >> 8) + 1);
 		break;
 	default:
 		ASSERT(false);
