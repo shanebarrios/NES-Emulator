@@ -66,6 +66,9 @@
     <ClCompile Include="Source\Core\VirtualController.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Source\NES\Mappers\MMC1.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\NES\CPUBus.h">

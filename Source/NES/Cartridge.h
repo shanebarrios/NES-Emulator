@@ -8,7 +8,8 @@ enum class MirrorMode : u8
 {
 	Horizontal,
 	Vertical,
-	SingleScreen,
+	SingleScreenLower,
+	SingleScreenUpper,
 	FourScreen
 };
 
@@ -19,23 +20,21 @@ public:
 
 	void LoadFromFile(const std::filesystem::path& path);
 
-	u8 ReadPrgRom(u16 offset) const;
+	u8 ReadPrgRom(usize offset) const;
 
-	u8 ReadChrRom(u16 offset) const;
+	u8 ReadPrgRam(usize offset) const;
 
-	u8 ReadPrgRam(u16 offset) const;
+	u8 ReadChr(usize offset) const;
 
-	u8 ReadChrRam(u16 offset) const;
-	
-	void WritePrgRam(u16 offset, u8 data);
+	void WritePrgRam(usize offset, u8 data);
 
-	void WriteChrRam(u16 offset, u8 data);
+	void WriteChr(usize offset, u8 data);
 
 	MirrorMode GetMirrorMode() const { return m_MirrorMode; }
 
 	usize GetPrgRomSize() const { return m_PrgRomSize; }
 
-	usize GetChrRomSize() const { return m_ChrRomSize; }
+	usize GetChrSize() const { return m_ChrSize; }
 
 	usize GetPrgRamSize() const { return m_PrgRamSize; }
 
@@ -50,7 +49,7 @@ private:
 	std::unique_ptr<u8[]> m_Trainer = nullptr;
 
 	usize m_PrgRomSize = 0;
-	usize m_ChrRomSize = 0;
+	usize m_ChrSize = 0;
 	usize m_PrgRamSize = 0;
 
 	MirrorMode m_MirrorMode = MirrorMode::Horizontal;

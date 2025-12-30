@@ -31,14 +31,15 @@ void Cartridge::LoadFromFile(const std::filesystem::path& path)
 	}
 	m_PrgRom = std::make_unique<u8[]>(m_PrgRomSize);
 
-	m_ChrRomSize = header[5] * 0x2000;
-	if (m_ChrRomSize == 0)
+	m_ChrSize = header[5] * 0x2000;
+	if (m_ChrSize == 0)
 	{
+		m_ChrSize = 0x2000;
 		m_ChrRam = std::make_unique<u8[]>(0x2000);
 	}
 	else
 	{
-		m_ChrRom = std::make_unique<u8[]>(m_ChrRomSize);
+		m_ChrRom = std::make_unique<u8[]>(m_ChrSize);
 	}
 
 	if (header[6] & (1 << 0))
@@ -78,9 +79,9 @@ void Cartridge::LoadFromFile(const std::filesystem::path& path)
 
 	inf.read(reinterpret_cast<char*>(m_PrgRom.get()), m_PrgRomSize);
 
-	if (m_ChrRomSize > 0)
+	if (m_ChrSize > 0)
 	{
-		inf.read(reinterpret_cast<char*>(m_ChrRom.get()), m_ChrRomSize);
+		inf.read(reinterpret_cast<char*>(m_ChrRom.get()), m_ChrSize);
 	}
 
 	if (inf.eof())
@@ -89,7 +90,7 @@ void Cartridge::LoadFromFile(const std::filesystem::path& path)
 	}	
 }
 
-u8 Cartridge::ReadPrgRom(u16 offset) const
+u8 Cartridge::ReadPrgRom(usize offset) const
 {
 	if (!m_PrgRom)
 	{
@@ -99,17 +100,21 @@ u8 Cartridge::ReadPrgRom(u16 offset) const
 	return m_PrgRom[offset & (m_PrgRomSize - 1)];
 }
 
-u8 Cartridge::ReadChrRom(u16 offset) const
+u8 Cartridge::ReadChr(usize offset) const
 {
-	if (!m_ChrRom)
-	{
-		return 0;
-	}
+	offset &= m_ChrSize - 1;
 
-	return m_ChrRom[offset & (m_ChrRomSize - 1)];
+	if (m_ChrRom)
+	{
+		return m_ChrRom[offset];
+	}
+	else
+	{
+		return m_ChrRam[offset];
+	}
 }
 
-u8 Cartridge::ReadPrgRam(u16 offset) const
+u8 Cartridge::ReadPrgRam(usize offset) const
 {
 	if (!m_PrgRam)
 	{
@@ -119,17 +124,7 @@ u8 Cartridge::ReadPrgRam(u16 offset) const
 	return m_PrgRam[offset & (m_PrgRamSize - 1)];
 }
 
-u8 Cartridge::ReadChrRam(u16 offset) const
-{
-	if (!m_ChrRam)
-	{
-		return 0;
-	}
-
-	return m_ChrRam[offset & 0x1FFF];
-}
-
-void Cartridge::WritePrgRam(u16 offset, u8 data)
+void Cartridge::WritePrgRam(usize offset, u8 data)
 {
 	if (!m_PrgRam)
 	{
@@ -139,12 +134,12 @@ void Cartridge::WritePrgRam(u16 offset, u8 data)
 	m_PrgRam[offset & (m_PrgRamSize - 1)] = data;
 }
 
-void Cartridge::WriteChrRam(u16 offset, u8 data)
+void Cartridge::WriteChr(usize offset, u8 data)
 {
-	if (!m_ChrRam)
-	{
-		return;
-	}
+	offset &= m_ChrSize - 1;
 
-	m_ChrRam[offset & 0x1FFF] = data;
+	if (m_ChrRam)
+	{
+		m_ChrRam[offset] = data;
+	}
 }

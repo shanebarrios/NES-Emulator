@@ -1,5 +1,8 @@
 #include "../Mapper.h"
 
+#include "../NES.h"
+#include "../Cartridge.h"
+
 std::optional<u16> Mapper::NametableMirror(u16 offset)
 {
 	const u16 tableOffset = offset & 0x03FF;
@@ -13,8 +16,11 @@ std::optional<u16> Mapper::NametableMirror(u16 offset)
 	case MirrorMode::Vertical:
 		table &= 1;
 		break;
-	case MirrorMode::SingleScreen:
+	case MirrorMode::SingleScreenLower:
 		table = 0;
+		break;
+	case MirrorMode::SingleScreenUpper:
+		table = 1;
 		break;
 	case MirrorMode::FourScreen:
 		return std::nullopt;

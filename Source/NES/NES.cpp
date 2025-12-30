@@ -23,9 +23,9 @@ void NES::LoadROM(const std::filesystem::path& path)
 		throw std::runtime_error{ "Cartridge has unsupported mapper" };
 	}
 
-	m_Mapper->Attach(&m_Cartridge);
+	m_Mapper->Init(&m_Cartridge, &m_Cpu);
 	m_Ppu.Attach(&m_Cpu, m_Mapper.get());
-	m_CpuBus.Attach(m_Mapper.get(), &m_Ppu, m_SystemRam.data(), &m_Controller);
+	m_CpuBus.Attach(m_Mapper.get(), &m_Ppu, m_Wram.data(), &m_Controller);
 	m_Cpu.Attach(&m_CpuBus);
 }
 

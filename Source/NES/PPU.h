@@ -117,8 +117,8 @@ private:
 	Memory<0x20> m_Palette{};
 	Memory<0x100> m_Oam{};
 	Memory<0x20> m_SecondaryOam{};
-	std::unique_ptr<u8[]> m_Framebuffer = nullptr;
 
+	std::unique_ptr<u8[]> m_Framebuffer = nullptr;
 	CPU* m_Cpu = nullptr;
 	Mapper* m_Mapper = nullptr;
 

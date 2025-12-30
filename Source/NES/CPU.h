@@ -90,6 +90,8 @@ public:
 
 	void SetIRQLine(bool asserted);
 
+	u64 GetCycle() const { return m_TotalCycles; }
+
 private:
 	void PrintState();
 

@@ -39,7 +39,7 @@ private:
 	Cartridge m_Cartridge{};
 	PPU m_Ppu{};
 	CPUBus m_CpuBus{};
-	SystemRam m_SystemRam{};
+	WRAM m_Wram{};
 	HardwareController m_Controller{};
 
 	std::unique_ptr<Mapper> m_Mapper{};

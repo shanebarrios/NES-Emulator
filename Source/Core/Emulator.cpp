@@ -18,7 +18,7 @@ Emulator::Emulator()
 	m_Nes = std::make_unique<NES>();
 	const WindowSpec windowSpec
 	{
-		.title = "NES Emulator",
+		.title = "NES Emulator",  
 		.width = 1280, .height = 960,
 		.renderWidth = 256, .renderHeight = 240
 	};

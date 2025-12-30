@@ -136,28 +136,13 @@ void PPU::AdvanceCycle()
 void PPU::Reset()
 {
 	// Memory
-	m_Vram.fill(0);
-	m_Palette.fill(0);
-	m_Oam.fill(0);
-	m_SecondaryOam.fill(0);
-	std::memset(m_Framebuffer.get(), 0, SCREEN_WIDTH * SCREEN_HEIGHT);
-
-	m_CtrlReg = m_MaskReg = m_StatusReg = m_OamAddr = m_Scroll = 0;
-
-	// Internal registers
-	m_V = m_T = m_X = m_W = 0;
-
-	// Fetch registers
-	m_NT = m_AT = m_BGLow = m_BGHigh = 0;
-
-	// Shift registers
-	m_BGTileLowShift = m_BGTileHighShift = m_BGPaletteLowShift = m_BGPaletteHighShift = 0;
-
-	m_ReadBuf = m_Scanline = m_ScanlineCycle = m_FrameNumber = 0;
-
-	// Sprite evaluation
-	m_SpritePixelBuf.fill({});
-	m_Sprite0InRange = false;
+	CPU* cpu = m_Cpu;
+	Mapper* mapper = m_Mapper;
+	auto framebuffer = std::move(m_Framebuffer);
+	std::memset(this, 0, sizeof(PPU));
+	m_Cpu = cpu;
+	m_Mapper = mapper;
+	m_Framebuffer = std::move(framebuffer);
 }
 
 void PPU::PrerenderCycle()

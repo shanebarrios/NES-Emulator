@@ -1,5 +1,13 @@
 #include "../Mapper.h"
 #include "../../Core/Logger.h"
+#include "../Cartridge.h"
+
+void CNROM::Init(Cartridge* cartridge, CPU* cpu) 
+{
+	m_Cartridge = cartridge;
+	m_Cpu = cpu;
+	m_MirrorMode = m_Cartridge->GetMirrorMode();
+}
 
 u8 CNROM::CpuRead(u16 addr)
 {
@@ -39,7 +47,7 @@ u8 CNROM::PpuRead(u16 addr)
 {
 	if (addr < 0x2000)
 	{
-		return m_Cartridge->ReadChrRom(m_ChrRomBank * 0x2000 + addr);
+		return m_Cartridge->ReadChr(m_ChrRomBank * 0x2000 + addr);
 	}
 	LOG_VERBOSE("Invalid PPU read from %hx", addr);
 	return 0;

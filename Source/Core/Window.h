@@ -46,14 +46,6 @@ public:
 
     bool ShouldQuit() const { return m_ShouldQuit; }
 
-    //void SetKeyCallback(KeyCallback callback);
-
-    //void SetMouseMoveCallback(MouseMoveCallback callback);
-
-    //bool IsKeyDown(KeyCode code) const;
-
-    //std::pair<int, int> GetMousePos() const;
-
     std::span<WindowPixel> GetFramebuffer() { return { m_BitmapMemory, static_cast<usize>(m_RenderWidth * m_RenderHeight) }; }
 
 private:
@@ -71,17 +63,10 @@ private:
 
     WindowPixel* m_BitmapMemory = nullptr;
 
-    //std::bitset<256> m_Keys{};
-    //MouseMoveCallback m_MouseMoveCallback{};
-    //KeyCallback m_KeyCallback{};
-
 	int m_Width = 0;
 	int m_Height = 0;
 	int m_RenderWidth = 0;
 	int m_RenderHeight = 0;
-
-    //int m_MousePosX = 0;
-    //int m_MousePosY = 0;
 
     bool m_ShouldQuit = false;
 };
