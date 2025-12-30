@@ -10,7 +10,7 @@ void MMC1::Init(Cartridge* cartridge, CPU* cpu)
 	m_MirrorMode = MirrorMode::SingleScreenLower;
 }
 
-u8 MMC1::CpuRead(u16 addr)
+std::optional<u8> MMC1::CpuRead(u16 addr)
 {
 	if (addr < 0x6000)
 	{
@@ -22,7 +22,7 @@ u8 MMC1::CpuRead(u16 addr)
 		// TODO: open bus
 		if (m_PrgRamDisabled)
 		{
-			return 0;
+			return std::nullopt;
 		}
 		else
 		{
@@ -63,7 +63,7 @@ u8 MMC1::CpuRead(u16 addr)
 		return m_Cartridge->ReadPrgRom(offset);
 	}
 	LOG_VERBOSE("Invalid CPU read from %hx", addr);
-	return 0;
+	return std::nullopt;
 }
 
 void MMC1::CpuWrite(u16 addr, u8 data)
@@ -101,7 +101,7 @@ void MMC1::CpuWrite(u16 addr, u8 data)
 	LOG_VERBOSE("Invalid CPU write to %hx", addr);
 }
 
-u8 MMC1::PpuRead(u16 addr)
+std::optional<u8> MMC1::PpuRead(u16 addr)
 {
 	if (addr < 0x1000)
 	{
@@ -114,7 +114,7 @@ u8 MMC1::PpuRead(u16 addr)
 		return m_Cartridge->ReadChr(offset);
 	}
 	LOG_VERBOSE("Invalid PPU read from %hx", addr);
-	return 0;
+	return std::nullopt;
 }
 
 

@@ -56,8 +56,9 @@ u8 CPUBus::Read(u16 addr)
 			read = m_Ppu->GetData();
 			break;
 		default:
-			break;
 			// open bus
+			read = m_Ppu->GetIOBus();
+			break;
 		}
 	}
 	else if (addr < 0x4020)
@@ -77,7 +78,11 @@ u8 CPUBus::Read(u16 addr)
 	}
 	else
 	{
-		read = m_Mapper->CpuRead(addr);
+		auto readOptional = m_Mapper->CpuRead(addr);
+		if (readOptional)
+		{
+			read = *readOptional;
+		}
 	}
 	m_LastRead = read;
 	return read;
@@ -117,8 +122,9 @@ void CPUBus::Write(u16 addr, u8 val)
 			m_Ppu->SetData(val);
 			return;
 		default:
-			break;
 			// invalid write
+			m_Ppu->SetIOBus(val);
+			break;
 		}
 	}
 	else if (addr < 0x4020)

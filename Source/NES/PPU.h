@@ -33,6 +33,9 @@ public:
 
 	void SetMask(u8 data);
 
+	u8 GetIOBus() const { return m_IOBus; }
+	void SetIOBus(u8 data);
+
 	u8 GetStatus();
 
 	void SetOAMAddr(u8 data);
@@ -152,6 +155,7 @@ private:
 	Array<SpritePixel, SCREEN_WIDTH> m_SpritePixelBuf{};
 
 	u8 m_ReadBuf = 0;
+	u8 m_IOBus = 0;
 
 	u16 m_Scanline = 0;
 	u16 m_ScanlineCycle = 0;

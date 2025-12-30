@@ -9,7 +9,7 @@ void CNROM::Init(Cartridge* cartridge, CPU* cpu)
 	m_MirrorMode = m_Cartridge->GetMirrorMode();
 }
 
-u8 CNROM::CpuRead(u16 addr)
+std::optional<u8> CNROM::CpuRead(u16 addr)
 {
 	if (addr < 0x6000)
 	{
@@ -26,7 +26,7 @@ u8 CNROM::CpuRead(u16 addr)
 		return m_Cartridge->ReadPrgRom(addr & 0x7FFF);
 	}
 	LOG_VERBOSE("Invalid CPU read from %hx", addr);
-	return 0;
+	return std::nullopt;
 }
 
 void CNROM::CpuWrite(u16 addr, u8 data)
@@ -43,14 +43,14 @@ void CNROM::CpuWrite(u16 addr, u8 data)
 	LOG_VERBOSE("Invalid CPU write to %hx", addr);
 }
 
-u8 CNROM::PpuRead(u16 addr)
+std::optional<u8> CNROM::PpuRead(u16 addr)
 {
 	if (addr < 0x2000)
 	{
 		return m_Cartridge->ReadChr(m_ChrRomBank * 0x2000 + addr);
 	}
 	LOG_VERBOSE("Invalid PPU read from %hx", addr);
-	return 0;
+	return std::nullopt;
 }
 
 

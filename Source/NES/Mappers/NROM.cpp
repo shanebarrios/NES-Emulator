@@ -10,7 +10,7 @@ void NROM::Init(Cartridge* cartridge, CPU* cpu)
 }
 
 
-u8 NROM::CpuRead(u16 addr)
+std::optional<u8> NROM::CpuRead(u16 addr)
 {
 	if (addr < 0x6000)
 	{
@@ -27,7 +27,7 @@ u8 NROM::CpuRead(u16 addr)
 		return m_Cartridge->ReadPrgRom(addr & 0x7FFF);
 	}
 	LOG_VERBOSE("Invalid CPU read from %hx", addr);
-	return 0;
+	return std::nullopt;
 }
 
 void NROM::CpuWrite(u16 addr, u8 data)
@@ -41,19 +41,18 @@ void NROM::CpuWrite(u16 addr, u8 data)
 	LOG_VERBOSE("Invalid CPU write to %hx", addr);
 }
 
-u8 NROM::PpuRead(u16 addr)
+std::optional<u8> NROM::PpuRead(u16 addr)
 {
 	if (addr < 0x2000)
 	{
 		return m_Cartridge->ReadChr(addr);
 	}
 	LOG_VERBOSE("Invalid PPU read from %hx", addr);
-	return 0;
+	return std::nullopt;
 }
 
 
 void NROM::PpuWrite(u16 addr, u8 data)
 {
 	m_Cartridge->WriteChr(addr, data);
-	LOG_VERBOSE("Invalid PPU write to %hx", addr);
 }

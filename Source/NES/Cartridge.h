@@ -22,7 +22,8 @@ public:
 
 	u8 ReadPrgRom(usize offset) const;
 
-	u8 ReadPrgRam(usize offset) const;
+	// Returns std::nullopt when PRG RAM is missing
+	std::optional<u8> ReadPrgRam(usize offset) const;
 
 	u8 ReadChr(usize offset) const;
 

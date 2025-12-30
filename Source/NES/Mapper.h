@@ -11,9 +11,9 @@ class CPU;
 #define MAPPER_BASE_PUBLIC_INTERFACE(name) \
 	name() = default; \
 	void Init(Cartridge* cartridge, CPU* cpu) override; \
-	u8 CpuRead(u16 addr) override; \
+	std::optional<u8> CpuRead(u16 addr) override; \
 	void CpuWrite(u16 addr, u8 data) override; \
-	u8 PpuRead(u16 addr) override; \
+	std::optional<u8> PpuRead(u16 addr) override; \
 	void PpuWrite(u16 addr, u8 data) override; \
 
 class Mapper
@@ -25,11 +25,13 @@ public:
 
 	virtual void Init(Cartridge* cartridge, CPU* cpu) = 0;
 
-	virtual u8 CpuRead(u16 addr) = 0;
+	// Returns std::nullopt on open bus
+	virtual std::optional<u8> CpuRead(u16 addr) = 0;
 
 	virtual void CpuWrite(u16 addr, u8 data) = 0;
 
-	virtual u8 PpuRead(u16 addr) = 0;
+	// Returns std::nullopt on open bus
+	virtual std::optional<u8> PpuRead(u16 addr) = 0;
 
 	virtual void PpuWrite(u16 addr, u8 data) = 0;
 

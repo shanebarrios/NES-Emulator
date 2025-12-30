@@ -326,7 +326,7 @@ void PPU::FetchBackgroundData()
 			fineY |
 			(tileNumber << PATTERN_TABLE_TILE_SHIFT) |
 			(patternHalf << PATTERN_TABLE_HALF_SHIFT);
-		m_BGLow = m_Mapper->PpuRead(addr);
+		m_BGLow = *m_Mapper->PpuRead(addr);
 		break;
 	}
 	// BG msbits fetch
@@ -339,7 +339,7 @@ void PPU::FetchBackgroundData()
 			(1 << PATTERN_TABLE_BIT_PLANE_SHIFT) | // read from right bitplane instead of left
 			(tileNumber << PATTERN_TABLE_TILE_SHIFT) |
 			(patternHalf << PATTERN_TABLE_HALF_SHIFT);
-		m_BGHigh = m_Mapper->PpuRead(addr);
+		m_BGHigh = *m_Mapper->PpuRead(addr);
 		break;
 	}
 	default:
@@ -463,8 +463,8 @@ void PPU::FetchSpriteData()
 		const u16 addrHigh =
 			addrLow | (1 << PATTERN_TABLE_BIT_PLANE_SHIFT);
 
-		const u8 patternLow = m_Mapper->PpuRead(addrLow);
-		const u8 patternHigh = m_Mapper->PpuRead(addrHigh);
+		const u8 patternLow = *m_Mapper->PpuRead(addrLow);
+		const u8 patternHigh = *m_Mapper->PpuRead(addrHigh);
 
 		const u8 paletteBits = sprite.attributes & SPRITE_ATTRIBUTE_PALETTE_MASK;
 		const u8 priority = (sprite.attributes >> SPRITE_ATTRIBUTE_PRIORITY_SHIFT) & 1;
@@ -583,6 +583,7 @@ void PPU::IncVertV()
 
 void PPU::SetCtrl(u8 data)
 {
+	m_IOBus = data;
 	if (IgnoresWrites())
 		return;
 
@@ -605,10 +606,16 @@ void PPU::SetCtrl(u8 data)
 
 void PPU::SetMask(u8 data)
 {
+	m_IOBus = data;
 	if (IgnoresWrites())
 		return;
 
 	m_MaskReg = data;
+}
+
+void PPU::SetIOBus(u8 data)
+{
+	m_IOBus = data;
 }
 
 u8 PPU::GetStatus()
@@ -618,13 +625,15 @@ u8 PPU::GetStatus()
 	m_StatusReg &= ~STATUS_VBLANK_BIT;
 	m_Cpu->SetNMILine(false);
 
+	m_IOBus = (m_IOBus & 0b11111) | (val & (0b111 << 5));
+
 	return val;
 }
 
 void PPU::SetOAMAddr(u8 data)
 {
+	m_IOBus = data;
 	m_OamAddr = data;
-
 }
 
 u8 PPU::GetOAMData()
@@ -635,17 +644,20 @@ u8 PPU::GetOAMData()
 	if ((m_OamAddr & 0x3) == 2)
 		val &= ~SPRITE_ATTRIBUTE_UNIMPLEMENTED_MASK;
 
+	m_IOBus = val;
 	return val;
 }
 
 void PPU::SetOAMData(u8 data)
 {
+	m_IOBus = data;
 	m_Oam[m_OamAddr] = data;
 	m_OamAddr++;
 }
 
 void PPU::SetScroll(u8 data)
 {
+	m_IOBus = data;
 	if (IgnoresWrites())
 		return;
 
@@ -666,6 +678,7 @@ void PPU::SetScroll(u8 data)
 
 void PPU::SetAddr(u8 data)
 {
+	m_IOBus = data;
 	if (IgnoresWrites())
 		return;
 
@@ -702,6 +715,7 @@ u8 PPU::GetData()
 		m_V += 1;
 	}
 
+	m_IOBus = ret;
 	return ret;
 }
 
@@ -730,7 +744,7 @@ u8 PPU::Read(u16 addr)
 {
 	if (addr < 0x2000)
 	{
-		return m_Mapper->PpuRead(addr);
+		return *m_Mapper->PpuRead(addr);
 	}
 	else if (addr < 0x3F00)
 	{
@@ -773,7 +787,7 @@ u8 PPU::NametableRead(u16 offset)
 	}
 	else
 	{
-		return m_Mapper->PpuRead(offset + 0x2000);
+		return *m_Mapper->PpuRead(offset + 0x2000);
 	}
 }
 

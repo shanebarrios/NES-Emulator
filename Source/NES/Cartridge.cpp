@@ -92,11 +92,6 @@ void Cartridge::LoadFromFile(const std::filesystem::path& path)
 
 u8 Cartridge::ReadPrgRom(usize offset) const
 {
-	if (!m_PrgRom)
-	{
-		return 0;
-	}
-
 	return m_PrgRom[offset & (m_PrgRomSize - 1)];
 }
 
@@ -114,11 +109,11 @@ u8 Cartridge::ReadChr(usize offset) const
 	}
 }
 
-u8 Cartridge::ReadPrgRam(usize offset) const
+std::optional<u8> Cartridge::ReadPrgRam(usize offset) const
 {
 	if (!m_PrgRam)
 	{
-		return 0;
+		return std::nullopt;
 	}
 
 	return m_PrgRam[offset & (m_PrgRamSize - 1)];
