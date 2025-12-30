@@ -2,6 +2,12 @@
 #include <stdio.h>
 #include "Core/Emulator.h"
 
+// TODO: implement APU
+// TODO: hardware acceleration with graphics API
+// TODO: platform layer abstraction
+// TODO: validation for Cartridge loading
+// TODO: more mappers
+
 HINSTANCE g_hInstance = nullptr;
 
 static int Main();

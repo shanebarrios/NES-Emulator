@@ -105,12 +105,12 @@ u8 MMC1::PpuRead(u16 addr)
 {
 	if (addr < 0x1000)
 	{
-		const u16 offset = (addr & 0xFFF) | (m_ChrBank0 << 12);
+		const usize offset = (addr & 0xFFF) | (m_ChrBank0 << 12);
 		return m_Cartridge->ReadChr(offset);
 	}
 	else if (addr < 0x2000)
 	{
-		const u16 offset = (addr & 0xFFF) | (m_ChrBank1 << 12);
+		const usize offset = (addr & 0xFFF) | (m_ChrBank1 << 12);
 		return m_Cartridge->ReadChr(offset);
 	}
 	LOG_VERBOSE("Invalid PPU read from %hx", addr);
@@ -122,13 +122,13 @@ void MMC1::PpuWrite(u16 addr, u8 data)
 {
 	if (addr < 0x1000)
 	{
-		const u16 offset = (addr & 0xFFF) | (m_ChrBank0 << 12);
+		const usize offset = (addr & 0xFFF) | (m_ChrBank0 << 12);
 		m_Cartridge->WriteChr(offset, data);
 		return;
 	}
 	else if (addr < 0x2000)
 	{
-		const u16 offset = (addr & 0xFFF) | (m_ChrBank1 << 12);
+		const usize offset = (addr & 0xFFF) | (m_ChrBank1 << 12);
 		m_Cartridge->WriteChr(offset, data);
 		return;
 	}
