@@ -35,7 +35,7 @@ void CPUBus::Attach(Mapper* mapper, PPU* ppu, u8* ram, HardwareController* contr
 
 u8 CPUBus::Read(u16 addr)
 {
-	u8 read = m_LastRead;
+	u8 read = m_OpenBus;
 
 	if (addr < 0x2000)
 	{
@@ -69,7 +69,7 @@ u8 CPUBus::Read(u16 addr)
 		{
 		case JOY1:
 			// upper bits are open bus
-			read = (m_LastRead & 0b11100000) | m_Controller->ReadBit();
+			read = (m_OpenBus & 0b11100000) | m_Controller->ReadBit();
 			break;
 		default:
 			break;
@@ -84,12 +84,14 @@ u8 CPUBus::Read(u16 addr)
 			read = *readOptional;
 		}
 	}
-	m_LastRead = read;
+	m_OpenBus = read;
 	return read;
 }
 
 void CPUBus::Write(u16 addr, u8 val)
 {
+	m_OpenBus = val;
+
 	if (addr < 0x2000)
 	{
 		m_Ram[addr & 0x7FF] = val;
@@ -97,7 +99,7 @@ void CPUBus::Write(u16 addr, u8 val)
 	}
 	else if (addr < 0x4000)
 	{
-		const u16 mirrored = 0x2000 | (addr & 0xF);
+		const u16 mirrored = 0x2000 | (addr & 0x7);
 		switch (mirrored)
 		{
 		case PPUCTRL:

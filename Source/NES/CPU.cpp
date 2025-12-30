@@ -819,12 +819,11 @@ void CPU::AbsoluteIndexedWrite()
 		m_Carry = sumLow >> 8;
 		break;
 	}
-	case 4: m_Val = Read(m_Addr); m_Addr += (m_Carry << 8); break;
-	case 5: ExecuteOp(); Write(m_Addr, m_Val); DONE(); break;
+	case 4: m_Val = Read(m_Addr); ExecuteOp(); m_Addr += (m_Carry << 8); break;
+	case 5: Write(m_Addr, m_Val); DONE(); break;
 	}
 }
 
-// TODO: this could be totally wrong
 void CPU::Relative()
 {
 	switch (m_InstrCycle)
@@ -1298,12 +1297,13 @@ void CPU::ExecuteOp()
 		break;
 	case Op::SAX:
 		m_Val = m_A & m_X;
+		//SetZN(m_Val);
 		break;
 	case Op::SBX:
 		result = (m_A & m_X) + ~m_Val + 1;
 		SetStatusBit(STATUS_CARRY, (m_A & m_X) >= m_Val); // not sure if carry flag is correct
-		SetStatusBit(STATUS_ZERO, m_X == 0);
-		SetStatusBit(STATUS_NEGATIVE, m_X & 0x80);
+		SetStatusBit(STATUS_ZERO, result == 0);
+		SetStatusBit(STATUS_NEGATIVE, result & 0x80);
 		m_X = result;
 		break;
 	case Op::SHA:

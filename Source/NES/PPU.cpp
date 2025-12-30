@@ -583,7 +583,7 @@ void PPU::IncVertV()
 
 void PPU::SetCtrl(u8 data)
 {
-	m_IOBus = data;
+	m_OpenBus = data;
 	if (IgnoresWrites())
 		return;
 
@@ -606,7 +606,7 @@ void PPU::SetCtrl(u8 data)
 
 void PPU::SetMask(u8 data)
 {
-	m_IOBus = data;
+	m_OpenBus = data;
 	if (IgnoresWrites())
 		return;
 
@@ -615,24 +615,26 @@ void PPU::SetMask(u8 data)
 
 void PPU::SetIOBus(u8 data)
 {
-	m_IOBus = data;
+	m_OpenBus = data;
 }
 
 u8 PPU::GetStatus()
 {
 	m_W = 0;
-	const u8 val = m_StatusReg;
+	const u8 val = 
+		(m_StatusReg & (0b111 << 5)) | 
+		(m_OpenBus & 0b11111);
 	m_StatusReg &= ~STATUS_VBLANK_BIT;
 	m_Cpu->SetNMILine(false);
 
-	m_IOBus = (m_IOBus & 0b11111) | (val & (0b111 << 5));
+	m_OpenBus = (m_OpenBus & 0b11111) | (m_OpenBus & (0b111 << 5));
 
 	return val;
 }
 
 void PPU::SetOAMAddr(u8 data)
 {
-	m_IOBus = data;
+	m_OpenBus = data;
 	m_OamAddr = data;
 }
 
@@ -644,20 +646,25 @@ u8 PPU::GetOAMData()
 	if ((m_OamAddr & 0x3) == 2)
 		val &= ~SPRITE_ATTRIBUTE_UNIMPLEMENTED_MASK;
 
-	m_IOBus = val;
+	m_OpenBus = val;
 	return val;
 }
 
 void PPU::SetOAMData(u8 data)
 {
-	m_IOBus = data;
+	// weird quirk
+	const u8 mask = m_OamAddr % 4 == 2 ?
+		0b11100011 :
+		0xFF;
+	m_OpenBus &= ~mask;
+	m_OpenBus |= data & mask;
 	m_Oam[m_OamAddr] = data;
 	m_OamAddr++;
 }
 
 void PPU::SetScroll(u8 data)
 {
-	m_IOBus = data;
+	m_OpenBus = data;
 	if (IgnoresWrites())
 		return;
 
@@ -678,7 +685,7 @@ void PPU::SetScroll(u8 data)
 
 void PPU::SetAddr(u8 data)
 {
-	m_IOBus = data;
+	m_OpenBus = data;
 	if (IgnoresWrites())
 		return;
 
@@ -701,8 +708,18 @@ u8 PPU::GetData()
 {
 	const u8 read = Read(m_V);
 
-	// reads from palette ram are not buffered
-	const u8 ret = m_V >= 0x3F00 ? read : m_ReadBuf;
+	u8 ret = 0;
+	// reads from palette ram, not buffered
+	if (m_V >= 0x3F00)
+	{
+		ret = (read & 0b111111) | ((m_OpenBus & 0b11) << 6);
+		m_OpenBus = ret;
+	}
+	else
+	{
+		ret = m_ReadBuf;
+		m_OpenBus = ret;
+	}
 
 	m_ReadBuf = read;
 
@@ -715,12 +732,13 @@ u8 PPU::GetData()
 		m_V += 1;
 	}
 
-	m_IOBus = ret;
 	return ret;
 }
 
 void PPU::SetData(u8 data)
 {
+	m_OpenBus = data;
+
 	Write(m_V, data);
 
 	if (m_CtrlReg & CTRL_INCREMENT_MODE_BIT)

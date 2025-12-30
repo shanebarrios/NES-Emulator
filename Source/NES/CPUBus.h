@@ -27,5 +27,5 @@ private:
 	u8* m_Ram = nullptr;
 	HardwareController* m_Controller = nullptr;
 
-	u8 m_LastRead = 0;
+	u8 m_OpenBus = 0;
 };
