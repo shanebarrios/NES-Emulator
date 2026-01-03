@@ -177,7 +177,7 @@ struct MouseMoveEvent
 
 namespace Input
 {
-    void Init();
+    bool Init();
 
     void Shutdown();
 

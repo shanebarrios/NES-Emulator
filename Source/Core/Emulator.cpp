@@ -18,18 +18,28 @@ Emulator::Emulator()
 	m_Nes = std::make_unique<NES>();
 	const WindowSpec windowSpec
 	{
-		.title = "NES Emulator",  
+		.title = "NES Emulator",
 		.width = 1280, .height = 960,
 		.renderWidth = 256, .renderHeight = 240
 	};
-	LoadPalette("C:\\Users\\shane\\source\\repos\\NES-Emulator\\Assets\\Palettes\\2C02G_wiki.pal");
-	m_Nes->LoadROM("C:\\Users\\shane\\source\\repos\\NES-Emulator\\roms\\AccuracyCoin.nes");
+	LoadPalette("Assets/Palettes/2C02G_wiki.pal");
+	m_Nes->LoadROM("Roms/mario.nes");
 	m_Nes->Reset();
 
 	m_Window.Init(windowSpec);
 	Input::PollEvents();
 
-	m_Controller.SetDefaultKeyboardBindings();
+	if (Input::ControllerConnected(0))
+	{
+		LOG_INFO("Controller detected, setting default controller keybinds");
+		m_Controller.SetDefaultControllerBindings();
+	}
+	else
+	{
+		LOG_INFO("No controller connected, setting default keyboard keybindings");
+		m_Controller.SetDefaultKeyboardBindings();
+	}
+		
 }
 
 Emulator::~Emulator()
@@ -124,7 +134,7 @@ void Emulator::Run()
 		{
 			lastSec += seconds(1);
 
-			LOG_INFO("Frame time avg: %f, fps: %d", frameTimeTotal / frames, frames);
+			//LOG_INFO("Frame time avg: %f, fps: %d", frameTimeTotal / frames, frames);
 			frames = 0;
 			frameTimeTotal = 0.0;
 		}

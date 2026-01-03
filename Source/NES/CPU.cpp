@@ -1034,7 +1034,7 @@ void CPU::SetZN(u8 val)
 void CPU::ExecuteOp()
 {
 	u8 result, tmp;
-	u16 result16, tmp16;
+	u16 result16;
 	constexpr u8 CONST = 0xFF;
 	switch (m_CurInstr.op)
 	{

@@ -33,6 +33,7 @@ void CPUBus::Attach(Mapper* mapper, PPU* ppu, u8* ram, HardwareController* contr
 	m_Controller = controller;
 }
 
+// TODO: check if switching on bits is faster than conditionals
 u8 CPUBus::Read(u16 addr)
 {
 	u8 read = m_OpenBus;
