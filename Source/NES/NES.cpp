@@ -1,15 +1,22 @@
 #include "NES.h"
 
-#include <stdexcept>
+#include "../Core/Logger.h"
 
 NES::NES() 
 {
 	
 }
 
-void NES::LoadROM(const std::filesystem::path& path)
+bool NES::LoadROM(const std::filesystem::path& path)
 {
-	m_Cartridge.LoadFromFile(path);
+	const std::string pathStr = path.string();
+	const std::string fileStr = path.filename().string();
+
+	if (m_Cartridge.LoadFromFile(path) != CartridgeLoadResult::Success)
+	{
+		LOG_ERROR("Failed to load ROM at %s", pathStr.c_str());
+		return false;
+	}
 
 	switch (m_Cartridge.GetMapperNumber())
 	{
@@ -23,13 +30,25 @@ void NES::LoadROM(const std::filesystem::path& path)
 		m_Mapper = std::make_unique<CNROM>();
 		break;
 	default:
-		throw std::runtime_error{ "Cartridge has unsupported mapper" };
+		LOG_ERROR("Cartridge at %s has unsupported mapper", pathStr.c_str());
+		return false;
 	}
 
 	m_Mapper->Init(&m_Cartridge, &m_Cpu);
 	m_Ppu.Attach(&m_Cpu, m_Mapper.get());
 	m_CpuBus.Attach(m_Mapper.get(), &m_Ppu, m_Wram.data(), &m_Controller);
 	m_Cpu.Attach(&m_CpuBus);
+
+	auto toKB = [](usize sizeBytes){ return sizeBytes >> 10; };
+
+	LOG_INFO("Loaded cartridge %s, PRG_ROM=%uKB, PRG_RAM=%uKB, CHR=%uKB, Mapper=%u",
+			 fileStr.c_str(),
+			 toKB(m_Cartridge.GetPrgRomSize()),
+			 toKB(m_Cartridge.GetPrgRamSize()),
+			 toKB(m_Cartridge.GetChrSize()),
+			 m_Cartridge.GetMapperNumber());
+	
+	return true;
 }
 
 void NES::Reset()

@@ -5,17 +5,21 @@
 #include "HardwareController.h"
 #include "../Core/Logger.h"
 
-static constexpr u16 PPUCTRL = 0x2000;
-static constexpr u16 PPUMASK = 0x2001;
-static constexpr u16 PPUSTATUS = 0x2002;
-static constexpr u16 OAMADDR = 0x2003;
-static constexpr u16 OAMDATA = 0x2004;
-static constexpr u16 PPUSCROLL = 0x2005;
-static constexpr u16 PPUADDR = 0x2006;
-static constexpr u16 PPUDATA = 0x2007;
-static constexpr u16 OAMDMA = 0x4014;
-static constexpr u16 JOY1 = 0x4016;
-static constexpr u16 JOY2 = 0x4017;
+enum IORegisters : u16
+{
+	PPUCTRL = 0x2000,
+	PPUMASK,
+	PPUSTATUS,
+	OAMADDR,
+	OAMDATA,
+	PPUSCROLL,
+	PPUADDR,
+	PPUDATA,
+	OAMDMA = 0x4014,
+	JOY1 = 0x4016,
+	JOY2
+};
+
 
 CPUBus::CPUBus(Mapper* mapper, PPU* ppu, u8* ram, HardwareController* controller) : 
 	m_Mapper{ mapper }, 

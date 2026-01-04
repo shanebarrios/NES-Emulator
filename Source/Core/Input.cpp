@@ -1,9 +1,6 @@
 #include "Input.h"
 
-#include "WindowsCommon.h"
-#include "Window.h"
 #include "Logger.h"
-#include <stdexcept>
 #include <bitset>
 #include <vector>
 #include "GameInput.h"
@@ -194,6 +191,8 @@ static void Win32DeviceStatusCallback(
 			s_GameInput.gamepads[i] = device;
 			device->AddRef();
 			s_InputState.controllerInput[i].connected = true;
+			LOG_INFO("Controller %d connected", i);
+			break;
 		}
 	}
 	// disconnected
@@ -208,6 +207,8 @@ static void Win32DeviceStatusCallback(
 			s_GameInput.gamepads[i] = nullptr;
 			s_InputState.controllerInput[i].buttons = 0;
 			s_InputState.controllerInput[i].connected = false;
+			LOG_WARN("Controller %d disconnected", i);
+			break;
 		}
 	}
 }

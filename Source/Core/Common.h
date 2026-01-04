@@ -1,25 +1,50 @@
 #pragma once
 
-#include <cstdlib>
-#include <iostream>
-#include <cstdint>
 #include <array>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 
-#define ASSERT(cond) \
-	do { \
-		if(!(cond)){ \
-			std::cerr << "Assertion failed: " << #cond << '\n'; \
-			std::abort(); \
-		}\
-	} while (0)
+#ifdef _MSC_VER
+#include <intrin.h>
+#define DEBUG_BREAK() __debugbreak()
+#else
+#include <signal.h>
+#define DEBUG_BREAK() raise(SIGTRAP)
+#endif
 
-#define ASSERT_MSG(cond, msg) \
-	do { \
-		if (!cond) { \
-			std::cerr << msg << '\n'; \
-			std::abort(); \
-		} \
-	} while (0)
+#ifndef ENABLE_ASSERTS
+#ifdef _DEBUG
+#define ENABLE_ASSERTS
+#endif
+#endif
+
+#ifdef ENABLE_ASSERTS
+#define ASSERT(expr)                                                                                                   \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if (!(expr))                                                                                                   \
+        {                                                                                                              \
+            fprintf(stderr, "Assertion failed: %s\n%s:%d\n", #expr, __FILE__, __LINE__);                               \
+            DEBUG_BREAK();                                                                                             \
+            std::abort();                                                                                              \
+        }                                                                                                              \
+    } while (0)
+
+#define ASSERT_MSG(expr, msg)                                                                                          \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if (!(expr))                                                                                                   \
+        {                                                                                                              \
+            fputs(msg, stderr);                                                                                        \
+            DEBUG_BREAK();                                                                                             \
+            std::abort();                                                                                              \
+        }                                                                                                              \
+    } while (0)
+#else
+#define ASSERT(expr)
+#define ASSERT_MSG(expr, msg)
+#endif
 
 using u8 = uint8_t;
 using u16 = uint16_t;
@@ -34,11 +59,8 @@ using i64 = int64_t;
 using usize = size_t;
 using isize = ptrdiff_t;
 
-template <typename T, size_t N>
-using Array = std::array<T, N>;
+template <typename T, size_t N> using Array = std::array<T, N>;
 
-template <typename T, size_t M, size_t N>
-using Array2D = std::array<std::array<T, M>, N>;
+template <typename T, size_t M, size_t N> using Array2D = std::array<std::array<T, M>, N>;
 
-template <size_t N>
-using Memory = Array<u8, N>;
+template <size_t N> using Memory = Array<u8, N>;

@@ -2,15 +2,14 @@
 
 #include <fstream>
 #include <cstring>
-#include <stdexcept>
 
-void Cartridge::LoadFromFile(const std::filesystem::path& path)
+CartridgeLoadResult Cartridge::LoadFromFile(const std::filesystem::path& path)
 {
 	std::ifstream inf{ path, std::ios::binary };
 
 	if (!inf)
 	{
-		throw std::runtime_error{ "Failed to open rom file" };
+		return CartridgeLoadResult::FileNotFound;
 	}
 
 	const char expectedHeader[4] = { 'N', 'E', 'S', '\x1A' };
@@ -21,13 +20,13 @@ void Cartridge::LoadFromFile(const std::filesystem::path& path)
 
 	if (inf.eof() || std::strncmp(reinterpret_cast<char*>(header), expectedHeader, 4) != 0)
 	{
-		throw std::runtime_error{ "Invalid rom header" };
+		return CartridgeLoadResult::InvalidHeader;
 	}
 
 	m_PrgRomSize = header[4] * 0x4000;
 	if (m_PrgRomSize == 0)
 	{
-		throw std::runtime_error{ "Invalid PRG_ROM size" };
+		return CartridgeLoadResult::InvalidPrgRomSize;
 	}
 	m_PrgRom = std::make_unique<u8[]>(m_PrgRomSize);
 
@@ -74,7 +73,7 @@ void Cartridge::LoadFromFile(const std::filesystem::path& path)
 		m_Trainer = std::make_unique<u8[]>(0x200);
 		inf.read(reinterpret_cast<char*>(m_Trainer.get()), 0x200);
 		if (inf.eof())
-			throw std::runtime_error{ "Incomplete trainer / missing ROM data" };
+			return CartridgeLoadResult::MissingData;
 	}
 
 	inf.read(reinterpret_cast<char*>(m_PrgRom.get()), m_PrgRomSize);
@@ -86,8 +85,10 @@ void Cartridge::LoadFromFile(const std::filesystem::path& path)
 
 	if (inf.eof())
 	{
-		throw std::runtime_error{ "Missing ROM data" };
-	}	
+		return CartridgeLoadResult::MissingData;
+	}
+
+	return CartridgeLoadResult::Success;
 }
 
 u8 Cartridge::ReadPrgRom(usize offset) const

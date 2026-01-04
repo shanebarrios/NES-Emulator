@@ -21,7 +21,7 @@ public:
 
 	NES();
 
-	void LoadROM(const std::filesystem::path& path);
+	[[nodiscard]] bool LoadROM(const std::filesystem::path& path);
 
 	void Reset();
 

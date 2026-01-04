@@ -6,6 +6,7 @@
 enum class AddrMode;
 enum class InstrType;
 enum class Op;
+class Mapper;
 
 namespace DebugUtils
 {

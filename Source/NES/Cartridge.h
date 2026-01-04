@@ -13,12 +13,21 @@ enum class MirrorMode : u8
 	FourScreen
 };
 
+enum class CartridgeLoadResult
+{
+	Success = 0,
+	FileNotFound,
+	InvalidHeader,
+	InvalidPrgRomSize,
+	MissingData
+};
+
 class Cartridge
 {
 public:
 	Cartridge() = default;
 
-	void LoadFromFile(const std::filesystem::path& path);
+	[[nodiscard]] CartridgeLoadResult LoadFromFile(const std::filesystem::path& path);
 
 	u8 ReadPrgRom(usize offset) const;
 
