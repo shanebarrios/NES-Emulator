@@ -256,6 +256,7 @@ static bool Win32InputInit()
 
 	s_GameInput.initialized = true;
 	s_GameInput.dll = dll;
+	return true;
 }
 
 static void Win32InputShutdown()

@@ -59,6 +59,9 @@ using i64 = int64_t;
 using usize = size_t;
 using isize = ptrdiff_t;
 
+using bool8 = uint8_t;
+using bool32 = uint32_t;
+
 template <typename T, size_t N> using Array = std::array<T, N>;
 
 template <typename T, size_t M, size_t N> using Array2D = std::array<std::array<T, M>, N>;

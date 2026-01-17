@@ -15,10 +15,6 @@ static void GlobalInit()
 
 Emulator::Emulator()
 {
-	while (true) 
-	{
-	}
-	
     GlobalInit();
     m_Nes = std::make_unique<NES>();
     const WindowSpec windowSpec{
@@ -120,7 +116,6 @@ void Emulator::Run()
 {
     using namespace std::chrono;
     using clock = high_resolution_clock;
-
     constexpr u64 frameTimeNS = static_cast<u64>(NES::FRAME_TIME * 1000000000);
 
     auto nextFrame = clock::now();
